@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice">
+  <!-- Gradient background (warm -> cool) -->
+  <defs>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f6d7b0"/>
+      <stop offset="50%" stop-color="#d6eef3"/>
+      <stop offset="100%" stop-color="#f6d7b0" stop-opacity="0.95"/>
+    </linearGradient>
+    <radialGradient id="soft" cx="70%" cy="50%" r="60%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.04"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.06"/>
+    </radialGradient>
+    <filter id="softShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="18" result="blur"/>
+      <feOffset in="blur" dx="0" dy="12" result="offsetBlur"/>
+      <feMerge>
+        <feMergeNode in="offsetBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="100%" height="100%" fill="url(#bgGrad)"/>
+  <rect width="100%" height="100%" fill="url(#soft)"/>
+
+  <!-- Left soft glow to mimic screenshot lighting -->
+  <circle cx="420" cy="540" r="420" fill="#d6eef3" opacity="0.28"/>
+
+  <!-- Group of sports equipment on the right -->
+  <g transform="translate(980,180)">
+    <!-- Basketball (front) -->
+    <g transform="translate(420,260) scale(1)">
+      <ellipse cx="0" cy="0" rx="220" ry="220" fill="#f27b32" filter="url(#softShadow)"/>
+      <path d="M -220 0 A 220 220 0 0 0 220 0" stroke="#e45f12" stroke-width="8" fill="none" transform="rotate(20)"/>
+      <path d="M 0 -220 A 220 220 0 0 0 0 220" stroke="#e45f12" stroke-width="8" fill="none" transform="rotate(20)"/>
+      <path d="M -155 -155 L 155 155" stroke="#e45f12" stroke-width="8" fill="none" transform="rotate(20)"/>
+      <path d="M -155 155 L 155 -155" stroke="#e45f12" stroke-width="8" fill="none" transform="rotate(20)"/>
+    </g>
+
+    <!-- Tennis racket (behind, tilted) -->
+    <g transform="translate(160,60) rotate(-28) scale(0.95)">
+      <ellipse cx="0" cy="0" rx="140" ry="200" fill="#e6f3ff" stroke="#2d6fb0" stroke-width="20"/>
+      <ellipse cx="0" cy="0" rx="86" ry="128" fill="none" stroke="#9ec7eb" stroke-width="6"/>
+      <rect x="-16" y="120" width="32" height="260" rx="12" fill="#2d6fb0"/>
+    </g>
+
+    <!-- Running shoe (right) -->
+    <g transform="translate(620,260) scale(0.85) rotate(2)">
+      <path d="M -260 30 C -190 10 -80 -30 40 -10 C 120 -0 180 10 220 48 C 260 86 220 140 160 140 C 110 140 0 140 -40 120 C -120 88 -220 60 -260 30 Z" fill="#6fb6f2" filter="url(#softShadow)"/>
+      <path d="M -90 40 C -40 20 40 10 110 20" stroke="#ffffff" stroke-width="8" fill="none" opacity="0.9"/>
+      <circle cx="190" cy="95" r="32" fill="#fff" opacity="0.06"/>
+    </g>
+
+    <!-- Soccer ball (middle) -->
+    <g transform="translate(340,360) scale(0.65)">
+      <circle cx="0" cy="0" r="100" fill="#ffffff" stroke="#e6e6e6" stroke-width="6" filter="url(#softShadow)"/>
+      <g fill="#111" transform="translate(0,0) scale(0.9)">
+        <path d="M0,-100 L38,-60 L24,-12 L-24,-12 L-38,-60 Z"/>
+        <path d="M0,100 L38,60 L24,12 L-24,12 L-38,60 Z"/>
+        <path d="M-100,0 L-60,38 L-12,24 L-12,-24 L-60,-38 Z"/>
+      </g>
+    </g>
+
+    <!-- Small cricket bat behind -->
+    <g transform="translate(760,60) rotate(30) scale(0.9)">
+      <rect x="-20" y="-10" width="380" height="70" rx="18" fill="#e2c098"/>
+      <rect x="310" y="5" width="40" height="150" rx="12" fill="#b9733a"/>
+    </g>
+
+    <!-- Sunglasses small accent -->
+    <g transform="translate(540,480) scale(0.6)">
+      <ellipse cx="-42" cy="0" rx="36" ry="20" fill="#fff" opacity="0.9"/>
+      <ellipse cx="42" cy="0" rx="36" ry="20" fill="#fff" opacity="0.9"/>
+      <rect x="-42" y="-10" width="84" height="20" fill="#4cc3a1" rx="10"/>
+    </g>
+
+  </g>
+
+  <!-- subtle vignette -->
+  <rect width="100%" height="100%" fill="black" opacity="0.02"/>
+</svg>

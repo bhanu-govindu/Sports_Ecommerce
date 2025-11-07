@@ -1,0 +1,43 @@
+import React, { useEffect, useState } from 'react'
+import api from '../api'
+import CartItem from '../components/CartItem'
+import { Link } from 'react-router-dom'
+
+const CUSTOMER_ID = 1
+
+export default function Cart(){
+  const [items, setItems] = useState([])
+  const [cart, setCart] = useState(null)
+
+  const loadCart = async () => {
+    const res = await api.get(`/carts/${CUSTOMER_ID}`)
+    setCart(res.data.cart)
+    setItems(res.data.items)
+  }
+
+  useEffect(()=> { loadCart() }, [])
+
+  const removeItem = async (cart_item_id) => {
+    await api.post(`/carts/${CUSTOMER_ID}/remove`, { cart_item_id })
+    loadCart()
+  }
+
+  const total = items.reduce((s,i)=> s + Number(i.price) * Number(i.quantity), 0)
+
+  return (
+    <div>
+      <h1 className="page-title">Your Cart</h1>
+      {items.length === 0 ? <p>Your cart is empty. <Link to="/">Shop now</Link></p> : (
+        <>
+          <div className="cart-list">
+            {items.map(it => <CartItem key={it.cart_item_id} item={it} onRemove={removeItem} />)}
+          </div>
+          <div className="checkout-box">
+            <div className="total">Total: ₹{total.toFixed(2)}</div>
+            <Link to="/checkout" className="btn">Checkout</Link>
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
