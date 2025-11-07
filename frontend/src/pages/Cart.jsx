@@ -3,14 +3,17 @@ import api from '../api'
 import CartItem from '../components/CartItem'
 import { Link } from 'react-router-dom'
 
-const CUSTOMER_ID = 1
+const getCustomer = () => { try { return JSON.parse(localStorage.getItem('customer')) } catch { return null } }
+
+const CUSTOMER = getCustomer()
 
 export default function Cart(){
   const [items, setItems] = useState([])
   const [cart, setCart] = useState(null)
 
   const loadCart = async () => {
-    const res = await api.get(`/carts/${CUSTOMER_ID}`)
+    if (!CUSTOMER) return window.location.href = '/auth?next=/cart'
+    const res = await api.get(`/carts/${CUSTOMER.customer_id}`)
     setCart(res.data.cart)
     setItems(res.data.items)
   }
@@ -18,7 +21,8 @@ export default function Cart(){
   useEffect(()=> { loadCart() }, [])
 
   const removeItem = async (cart_item_id) => {
-    await api.post(`/carts/${CUSTOMER_ID}/remove`, { cart_item_id })
+    if (!CUSTOMER) return window.location.href = '/auth?next=/cart'
+    await api.post(`/carts/${CUSTOMER.customer_id}/remove`, { cart_item_id })
     loadCart()
   }
 

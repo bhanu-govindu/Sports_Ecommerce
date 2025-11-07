@@ -6,7 +6,10 @@ export default function ProductDetails(){
   const { id } = useParams()
   const [data, setData] = useState(null)
   const [qty, setQty] = useState(1)
-  const CUSTOMER_ID = 1
+  const getCustomer = () => {
+    try { return JSON.parse(localStorage.getItem('customer')) } catch { return null }
+  }
+  const CUSTOMER = getCustomer()
 
   useEffect(()=>{
     api.get(`/products/${id}`).then(res => setData(res.data)).catch(console.error)
@@ -16,7 +19,12 @@ export default function ProductDetails(){
   const { product, reviews } = data
 
   const addToCart = async () => {
-    await api.post(`/carts/${CUSTOMER_ID}/add`, { product_id: product.product_id, quantity: qty })
+    if (!CUSTOMER) {
+      // redirect to auth and come back to add to cart after login
+      const url = `/auth?action=add&product_id=${product.product_id}&quantity=${qty}`
+      return window.location.href = url
+    }
+    await api.post(`/carts/${CUSTOMER.customer_id}/add`, { product_id: product.product_id, quantity: qty })
     alert('Added to cart')
   }
 

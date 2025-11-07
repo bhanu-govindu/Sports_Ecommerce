@@ -16,6 +16,7 @@ import {
   MenuItem,
 } from '@mui/material';
 import { ShoppingCart, SportsBasketball, Menu as MenuIcon } from '@mui/icons-material';
+import AccountCircle from '@mui/icons-material/AccountCircle'
 
 function HideOnScroll({ children }) {
   const trigger = useScrollTrigger();
@@ -31,6 +32,8 @@ const Navbar = () => {
   const location = useLocation();
   const [anchorEl, setAnchorEl] = useState(null);
   const [isHovered, setIsHovered] = useState(false);
+  const [customer, setCustomer] = useState(null)
+  const [cartCount, setCartCount] = useState(0)
 
   const handleMenuClick = (event) => {
     setAnchorEl(event.currentTarget);
@@ -39,6 +42,17 @@ const Navbar = () => {
   const handleMenuClose = () => {
     setAnchorEl(null);
   };
+
+  React.useEffect(()=>{
+    try { const c = JSON.parse(localStorage.getItem('customer')); setCustomer(c || null) } catch { setCustomer(null) }
+  }, [])
+
+  React.useEffect(()=>{
+    if (!customer) { setCartCount(0); return }
+    // fetch cart to get count
+    fetch(`${import.meta.env.VITE_API_BASE || 'http://localhost:4000/api'}/carts/${customer.customer_id}`)
+      .then(r=>r.json()).then(data=> setCartCount((data.items||[]).length)).catch(()=>{})
+  }, [customer])
 
   const navButtonVariants = {
     hover: {
@@ -152,24 +166,28 @@ const Navbar = () => {
                   to="/cart"
                   sx={{ ml: 1 }}
                 >
-                  <Badge 
-                    badgeContent={0} 
-                    color="error"
-                    sx={{
-                      '& .MuiBadge-badge': {
-                        animation: 'pulse 1.5s infinite',
-                        '@keyframes pulse': {
-                          '0%': { transform: 'scale(1)' },
-                          '50%': { transform: 'scale(1.2)' },
-                          '100%': { transform: 'scale(1)' },
-                        },
-                      },
-                    }}
-                  >
+                  <Badge badgeContent={cartCount} color="error">
                     <ShoppingCart />
                   </Badge>
                 </IconButton>
               </motion.div>
+              <motion.div variants={navButtonVariants} whileHover="hover" whileTap="tap">
+                <IconButton color="inherit" component={Link} to="/profile" sx={{ ml: 1 }}>
+                  <AccountCircle />
+                </IconButton>
+              </motion.div>
+            </Box>
+
+            {/* Sign in / user area */}
+            <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 1, ml: 2 }}>
+              {customer ? (
+                <>
+                  <Button color="inherit" component={Link} to="/profile">Hi, {customer.name}</Button>
+                  <Button color="inherit" onClick={() => { localStorage.removeItem('customer'); setCustomer(null); window.location.reload() }}>Sign out</Button>
+                </>
+              ) : (
+                <Button color="inherit" component={Link} to="/auth">Sign in</Button>
+              )}
             </Box>
 
             {/* Mobile Menu */}

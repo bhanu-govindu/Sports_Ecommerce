@@ -11,8 +11,10 @@ import {
   Chip,
   Rating,
   useTheme,
+  IconButton,
 } from '@mui/material';
 import { AddShoppingCart, Favorite, Share } from '@mui/icons-material';
+import api from '../api'
 
 const ProductCard = ({ product }) => {
   const navigate = useNavigate();
@@ -244,6 +246,21 @@ const ProductCard = ({ product }) => {
                 variant="outlined"
                 size="small"
                 startIcon={<AddShoppingCart />}
+                onClick={async () => {
+                  try {
+                    const raw = localStorage.getItem('customer')
+                    const customer = raw ? JSON.parse(raw) : null
+                    if (!customer) {
+                      // redirect to auth page and request add-to-cart after login
+                      return navigate(`/auth?action=add&product_id=${product.product_id}&quantity=1`)
+                    }
+                    await api.post(`/carts/${customer.customer_id}/add`, { product_id: product.product_id, quantity: 1 })
+                    alert('Added to cart')
+                  } catch (err) {
+                    console.error(err)
+                    alert('Could not add to cart')
+                  }
+                }}
                 sx={{ 
                   color: '#1a237e', 
                   borderColor: '#1a237e',

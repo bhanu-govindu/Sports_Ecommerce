@@ -21,22 +21,25 @@ const Products = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [sportType, setSportType] = useState('all');
+  const [categories, setCategories] = useState([])
+  const [categoryId, setCategoryId] = useState('all')
 
   useEffect(() => {
-    api.get('/products')
-      .then(res => {
-        setProducts(res.data);
-        setLoading(false);
-      })
-      .catch(error => {
-        console.error('Error fetching products:', error);
-        setLoading(false);
-      });
+    const load = async () => {
+      try {
+        const [pRes, cRes] = await Promise.all([api.get('/products'), api.get('/categories')])
+        setProducts(pRes.data)
+        setCategories(cRes.data)
+      } catch (err) { console.error(err) }
+      setLoading(false)
+    }
+    load()
   }, []);
 
   const filteredProducts = products.filter(product => 
     product.product_name?.toLowerCase().includes(search.toLowerCase()) &&
-    (sportType === 'all' || product.sport_type === sportType)
+    (sportType === 'all' || product.sport_type === sportType) &&
+    (categoryId === 'all' || String(product.category_id) === String(categoryId))
   );
 
   return (
@@ -101,6 +104,16 @@ const Products = () => {
                   <MenuItem value="basketball">Basketball</MenuItem>
                   <MenuItem value="tennis">Tennis</MenuItem>
                   <MenuItem value="cricket">Cricket</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth variant="outlined">
+                <Select value={categoryId} onChange={(e)=>setCategoryId(e.target.value)}>
+                  <MenuItem value="all">All Categories</MenuItem>
+                  {categories.map(cat => (
+                    <MenuItem key={cat.category_id} value={cat.category_id}>{cat.category_name}</MenuItem>
+                  ))}
                 </Select>
               </FormControl>
             </Grid>

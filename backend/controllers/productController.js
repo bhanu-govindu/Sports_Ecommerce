@@ -1,8 +1,16 @@
 import db from '../config/db.js';
 
 export const getAllProducts = (req, res) => {
-  const q = `SELECT p.*, c.category_name FROM product p LEFT JOIN category c ON p.category_id = c.category_id`;
-  db.query(q, (err, results) => {
+  // support optional filters: sport_type, category_id, search
+  const { sport_type, category_id, search } = req.query;
+  let q = `SELECT p.*, c.category_name FROM product p LEFT JOIN category c ON p.category_id = c.category_id`;
+  const params = [];
+  const filters = [];
+  if (sport_type) { filters.push('LOWER(p.sport_type) = LOWER(?)'); params.push(sport_type); }
+  if (category_id) { filters.push('p.category_id = ?'); params.push(category_id); }
+  if (search) { filters.push('LOWER(p.product_name) LIKE ?'); params.push(`%${search.toLowerCase()}%`); }
+  if (filters.length) q += ' WHERE ' + filters.join(' AND ');
+  db.query(q, params, (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(results);
   });
