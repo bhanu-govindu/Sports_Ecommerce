@@ -11,6 +11,7 @@ import {
   MenuItem,
   Paper,
   Skeleton,
+  Chip,
 } from '@mui/material';
 import { Search, SportsSoccer } from '@mui/icons-material';
 import ProductCard from '../components/ProductCard';
@@ -35,6 +36,20 @@ const Products = () => {
     }
     load()
   }, []);
+
+  // derive sport types dynamically from products
+  const sportTypes = React.useMemo(() => {
+    const set = new Set();
+    products.forEach(p => { if (p.sport_type) set.add(p.sport_type) });
+    return Array.from(set).sort();
+  }, [products]);
+
+  // derive categories relevant to selected sport type
+  const availableCategories = React.useMemo(() => {
+    if (sportType === 'all') return categories;
+    const catIds = new Set(products.filter(p => p.sport_type === sportType).map(p => p.category_id));
+    return categories.filter(c => catIds.has(c.category_id));
+  }, [categories, products, sportType]);
 
   const filteredProducts = products.filter(product => 
     product.product_name?.toLowerCase().includes(search.toLowerCase()) &&
@@ -76,7 +91,7 @@ const Products = () => {
       <Container maxWidth="lg">
         {/* Filters */}
         <Box sx={{ mb: 4 }}>
-          <Grid container spacing={2}>
+          <Grid container spacing={2} alignItems="center">
             <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
@@ -94,29 +109,45 @@ const Products = () => {
               />
             </Grid>
             <Grid item xs={12} md={6}>
-              <FormControl fullWidth variant="outlined">
-                <Select
-                  value={sportType}
-                  onChange={(e) => setSportType(e.target.value)}
-                >
-                  <MenuItem value="all">All Sports</MenuItem>
-                  <MenuItem value="football">Football</MenuItem>
-                  <MenuItem value="basketball">Basketball</MenuItem>
-                  <MenuItem value="tennis">Tennis</MenuItem>
-                  <MenuItem value="cricket">Cricket</MenuItem>
-                </Select>
-              </FormControl>
+              {/* Sport type selector - primary control */}
+              <Box sx={{ display: 'flex', justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
+                <FormControl variant="standard">
+                  <Select
+                    value={sportType}
+                    onChange={(e) => { setSportType(e.target.value); setCategoryId('all') }}
+                    sx={{ minWidth: 160 }}
+                  >
+                    <MenuItem value="all">All Sports</MenuItem>
+                    {sportTypes.map(st => (
+                      <MenuItem key={st} value={st}>{st}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Box>
             </Grid>
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth variant="outlined">
-                <Select value={categoryId} onChange={(e)=>setCategoryId(e.target.value)}>
-                  <MenuItem value="all">All Categories</MenuItem>
-                  {categories.map(cat => (
-                    <MenuItem key={cat.category_id} value={cat.category_id}>{cat.category_name}</MenuItem>
+
+            {/* Sport chips row (quick selection) */}
+            <Grid item xs={12}>
+              <Box sx={{ mb: 2, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                <Chip label="All Sports" clickable color={sportType === 'all' ? 'primary' : 'default'} onClick={() => { setSportType('all'); setCategoryId('all') }} />
+                {sportTypes.map(st => (
+                  <Chip key={st} label={st} clickable color={sportType === st ? 'primary' : 'default'} onClick={() => { setSportType(st); setCategoryId('all') }} />
+                ))}
+              </Box>
+            </Grid>
+
+            {/* Categories appear only when a sport is selected */}
+            {sportType !== 'all' && (
+              <Grid item xs={12}>
+                <Typography variant="subtitle1" sx={{ mb: 1 }}>Categories for {sportType}</Typography>
+                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                  <Chip label="All Categories" clickable color={categoryId === 'all' ? 'primary' : 'default'} onClick={() => setCategoryId('all')} />
+                  {availableCategories.map(cat => (
+                    <Chip key={cat.category_id} label={cat.category_name} clickable color={String(categoryId) === String(cat.category_id) ? 'primary' : 'default'} onClick={() => setCategoryId(cat.category_id)} />
                   ))}
-                </Select>
-              </FormControl>
-            </Grid>
+                </Box>
+              </Grid>
+            )}
           </Grid>
         </Box>
 
