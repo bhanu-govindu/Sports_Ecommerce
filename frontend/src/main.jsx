@@ -2,6 +2,7 @@ import React from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import App from './App'
+import ProtectedRoute from './components/ProtectedRoute'
 import Home from './pages/Home'
 import Products from './pages/Products'
 import ProductDetails from './pages/ProductDetails'
@@ -22,10 +23,31 @@ createRoot(document.getElementById('root')).render(
             <Route path="/" element={<Home />} />
             <Route path="/products" element={<Products />} />
             <Route path="/auth" element={<Auth />} />
-            <Route path="/profile" element={<Profile />} />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              }
+            />
             <Route path="/product/:id" element={<ProductDetails />} />
-            <Route path="/cart" element={<Cart />} />
-            <Route path="/checkout" element={<Checkout />} />
+            <Route
+              path="/cart"
+              element={
+                <ProtectedRoute>
+                  <Cart />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/checkout"
+              element={
+                <ProtectedRoute>
+                  <Checkout />
+                </ProtectedRoute>
+              }
+            />
           </Routes>
         </App>
       </BrowserRouter>

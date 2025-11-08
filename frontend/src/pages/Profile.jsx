@@ -10,10 +10,12 @@ import {
   Grid,
   Snackbar,
   Alert,
-  CircularProgress
+  CircularProgress,
+  Link
 } from '@mui/material'
+import PersonOutlineIcon from '@mui/icons-material/PersonOutline'
 
-const getCustomer = () => { try { return JSON.parse(localStorage.getItem('customer')) } catch { return null } }
+import { getCustomer, clearCustomer, setCustomer } from '../auth'
 
 function initials(name = ''){
   return name.split(' ').map(s=>s[0]).join('').slice(0,2).toUpperCase()
@@ -45,15 +47,41 @@ export default function Profile(){
       const res = await api.put(`/customers/${customer.customer_id}`, {
         name: data.name, email: data.email, phone: data.phone, address: data.address
       })
-      setData(res.data)
-      localStorage.setItem('customer', JSON.stringify(res.data))
+  setData(res.data)
+  setCustomer(res.data)
       setSnack({ open: true, severity: 'success', message: 'Profile updated' })
       setEditing(false)
     } catch (err) { console.error(err); setSnack({ open: true, severity: 'error', message: 'Could not update profile' }) }
     finally { setLoading(false) }
   }
 
-  if (!customer) return <div style={{ padding: 24 }}>Please sign in to view your profile.</div>
+  if (!customer) return (
+    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
+      <Paper elevation={3} sx={{ width: { xs: '92%', sm: 450 }, p: 4, textAlign: 'center' }}>
+        <Avatar sx={{ width: 64, height: 64, bgcolor: 'primary.main', mx: 'auto', mb: 2 }}>
+          <PersonOutlineIcon sx={{ fontSize: 40 }} />
+        </Avatar>
+        <Typography variant="h5" sx={{ mb: 2 }}>Sign in Required</Typography>
+        <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+          Please sign in to view and manage your profile
+        </Typography>
+        <Button
+          variant="contained"
+          size="large"
+          href="/auth"
+          sx={{ width: '100%', mb: 2 }}
+        >
+          Sign In
+        </Button>
+        <Typography variant="body2" color="text.secondary">
+          Don't have an account?{' '}
+          <Link href="/auth?tab=1" color="primary" sx={{ textDecoration: 'none' }}>
+            Create one now
+          </Link>
+        </Typography>
+      </Paper>
+    </Box>
+  );
 
   return (
     <Box sx={{ display: 'flex', justifyContent: 'center', mt: 6 }}>
@@ -86,7 +114,7 @@ export default function Profile(){
             <TextField fullWidth label="Address" value={data?.address || ''} onChange={e=>setData({...data, address: e.target.value})} sx={{ mb: 2 }} multiline rows={3} InputProps={{ readOnly: !editing }} />
 
             <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-              <Button variant="outlined" onClick={() => { localStorage.removeItem('customer'); window.location.href = '/' }}>Sign out</Button>
+              <Button variant="outlined" onClick={() => { clearCustomer(); window.location.href = '/' }}>Sign out</Button>
             </Box>
           </Grid>
         </Grid>

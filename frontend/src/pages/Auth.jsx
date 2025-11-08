@@ -1,13 +1,22 @@
 import React, { useState } from 'react'
 import api from '../api'
 import { useNavigate } from 'react-router-dom'
-import { Box, Paper, Tabs, Tab, TextField, Button, Typography, Avatar, Grid } from '@mui/material'
+import { setCustomer } from '../auth'
+import { Box, Paper, Tabs, Tab, TextField, Button, Typography, Avatar, Grid, InputAdornment, IconButton } from '@mui/material'
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined'
+import { Visibility, VisibilityOff } from '@mui/icons-material'
 
 export default function Auth(){
-  const [tab, setTab] = useState(0)
+  const [tab, setTab] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('tab') === '1' ? 1 : 0;
+  })
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [phone, setPhone] = useState('')
   const [address, setAddress] = useState('')
   const navigate = useNavigate()
@@ -16,9 +25,17 @@ export default function Auth(){
 
   const signup = async () => {
     try {
-      const res = await api.post('/customers', { name, email, phone, address })
-      const customer = res.data
-      localStorage.setItem('customer', JSON.stringify(customer))
+      if (!password) {
+        alert('Password is required');
+        return;
+      }
+      if (password !== confirmPassword) {
+        alert('Passwords do not match');
+        return;
+      }
+      const res = await api.post('/customers', { name, email, password, phone, address })
+  const customer = res.data
+  setCustomer(customer)
       await handlePostAuthAction(customer)
     } catch (err) {
       console.error(err)
@@ -28,9 +45,13 @@ export default function Auth(){
 
   const signin = async () => {
     try {
-      const res = await api.post('/customers/login', { email })
-      const customer = res.data
-      localStorage.setItem('customer', JSON.stringify(customer))
+      if (!password) {
+        alert('Password is required');
+        return;
+      }
+      const res = await api.post('/customers/login', { email, password })
+  const customer = res.data
+  setCustomer(customer)
       await handlePostAuthAction(customer)
     } catch (err) {
       console.error(err)
@@ -88,6 +109,54 @@ export default function Auth(){
                 <TextField fullWidth label="Name" value={name} onChange={e=>setName(e.target.value)} sx={{ mb: 2 }} required />
               )}
               <TextField fullWidth label="Email" type="email" value={email} onChange={e=>setEmail(e.target.value)} sx={{ mb: 2 }} required />
+              <TextField 
+                fullWidth 
+                label="Password" 
+                type={showPassword ? "text" : "password"}
+                value={password} 
+                onChange={e=>setPassword(e.target.value)} 
+                sx={{ mb: 2 }} 
+                required
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        aria-label="toggle password visibility"
+                        onClick={() => setShowPassword(!showPassword)}
+                        edge="end"
+                      >
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+              />
+              {tab === 1 && (
+                <TextField 
+                  fullWidth 
+                  label="Confirm Password" 
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={confirmPassword} 
+                  onChange={e=>setConfirmPassword(e.target.value)} 
+                  sx={{ mb: 2 }} 
+                  required
+                  error={password !== confirmPassword && confirmPassword !== ''}
+                  helperText={password !== confirmPassword && confirmPassword !== '' ? "Passwords don't match" : ''}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          aria-label="toggle password visibility"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          edge="end"
+                        >
+                          {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              )}
               {tab === 1 && (
                 <>
                   <TextField fullWidth label="Phone" value={phone} onChange={e=>setPhone(e.target.value)} sx={{ mb: 2 }} />

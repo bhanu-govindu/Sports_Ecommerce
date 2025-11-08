@@ -1,17 +1,17 @@
 import React, { useState } from 'react'
 import api from '../api'
 import { useNavigate } from 'react-router-dom'
-
-const getCustomer = () => { try { return JSON.parse(localStorage.getItem('customer')) } catch { return null } }
-const CUSTOMER = getCustomer()
+import { getCustomer } from '../auth'
 
 export default function Checkout(){
+  const CUSTOMER = getCustomer()
   const [billingAddress, setBillingAddress] = useState(CUSTOMER?.address || '')
   const [total, setTotal] = useState(0)
 
   const loadCartTotal = async () => {
-    if (!CUSTOMER) return window.location.href = '/auth?next=/checkout'
-    const res = await api.get(`/carts/${CUSTOMER.customer_id}`)
+    const CURRENT = getCustomer()
+    if (!CURRENT) return window.location.href = '/auth?next=/checkout'
+    const res = await api.get(`/carts/${CURRENT.customer_id}`)
     const items = res.data.items || []
     setTotal(items.reduce((s,i)=> s + Number(i.price) * Number(i.quantity), 0))
   }
@@ -19,8 +19,9 @@ export default function Checkout(){
 
   const placeOrder = async () => {
     try {
-      if (!CUSTOMER) return window.location.href = '/auth?next=/checkout'
-      const orderResp = await api.post(`/orders/${CUSTOMER.customer_id}/create`, { billingAddress })
+      const CURRENT = getCustomer()
+      if (!CURRENT) return window.location.href = '/auth?next=/checkout'
+      const orderResp = await api.post(`/orders/${CURRENT.customer_id}/create`, { billingAddress })
       const orderId = orderResp.data.order_id
       // create payment record for COD
       await api.post('/payments', { order_id: orderId, payment_method: 'cod', amount: total })
@@ -36,7 +37,8 @@ export default function Checkout(){
 
   React.useEffect(()=>{
     // prefill billing address from saved profile if available
-    if (!billingAddress && CUSTOMER?.address) setBillingAddress(CUSTOMER.address)
+    const CURRENT = getCustomer()
+    if (!billingAddress && CURRENT?.address) setBillingAddress(CURRENT.address)
   }, [])
 
   return (

@@ -17,6 +17,7 @@ import {
 } from '@mui/material';
 import { ShoppingCart, SportsBasketball, Menu as MenuIcon } from '@mui/icons-material';
 import AccountCircle from '@mui/icons-material/AccountCircle'
+import { getCustomer, clearCustomer } from '../auth'
 
 function HideOnScroll({ children }) {
   const trigger = useScrollTrigger();
@@ -44,7 +45,16 @@ const Navbar = () => {
   };
 
   React.useEffect(()=>{
-    try { const c = JSON.parse(localStorage.getItem('customer')); setCustomer(c || null) } catch { setCustomer(null) }
+    try { const c = getCustomer(); setCustomer(c || null) } catch { setCustomer(null) }
+  }, [])
+
+  // update navbar when auth changes elsewhere in the app
+  React.useEffect(() => {
+    const handler = (e) => {
+      try { const c = getCustomer(); setCustomer(c || null) } catch { setCustomer(null) }
+    }
+    window.addEventListener('authChange', handler)
+    return () => window.removeEventListener('authChange', handler)
   }, [])
 
   React.useEffect(()=>{
@@ -183,7 +193,7 @@ const Navbar = () => {
               {customer ? (
                 <>
                   <Button color="inherit" component={Link} to="/profile">Hi, {customer.name}</Button>
-                  <Button color="inherit" onClick={() => { localStorage.removeItem('customer'); setCustomer(null); window.location.reload() }}>Sign out</Button>
+                  <Button color="inherit" onClick={() => { clearCustomer(); setCustomer(null); window.location.reload() }}>Sign out</Button>
                 </>
               ) : (
                 <Button color="inherit" component={Link} to="/auth">Sign in</Button>

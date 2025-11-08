@@ -15,6 +15,7 @@ import {
 } from '@mui/material';
 import { AddShoppingCart, Favorite, Share } from '@mui/icons-material';
 import api from '../api'
+import { getCustomer } from '../auth'
 
 const ProductCard = ({ product }) => {
   const navigate = useNavigate();
@@ -248,8 +249,7 @@ const ProductCard = ({ product }) => {
                 startIcon={<AddShoppingCart />}
                 onClick={async () => {
                   try {
-                    const raw = localStorage.getItem('customer')
-                    const customer = raw ? JSON.parse(raw) : null
+                    const customer = getCustomer()
                     if (!customer) {
                       // redirect to auth page and request add-to-cart after login
                       return navigate(`/auth?action=add&product_id=${product.product_id}&quantity=1`)
