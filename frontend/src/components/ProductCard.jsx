@@ -16,12 +16,17 @@ import {
 import { AddShoppingCart, Favorite, Share } from '@mui/icons-material';
 import api from '../api'
 import { getCustomer } from '../auth'
+import { isLiked, toggleWishlist } from '../wishlist'
 
 const ProductCard = ({ product }) => {
   const navigate = useNavigate();
   const theme = useTheme();
   const [isHovered, setIsHovered] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
+
+  React.useEffect(() => {
+    try { setIsFavorite(isLiked(product.product_id)) } catch {}
+  }, [product?.product_id])
 
   // Placeholder image URL - replace with your actual product images
   const imageUrl = `https://source.unsplash.com/400x300/?${product.sport_type},sports`;
@@ -112,7 +117,7 @@ const ProductCard = ({ product }) => {
                   backgroundColor: 'white',
                   '&:hover': { backgroundColor: 'white' }
                 }}
-                onClick={() => setIsFavorite(!isFavorite)}
+                onClick={(e) => { e.stopPropagation?.(); toggleWishlist(product.product_id); setIsFavorite(v=>!v) }}
               >
                 <Favorite 
                   sx={{ 

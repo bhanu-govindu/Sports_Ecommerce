@@ -10,6 +10,7 @@ import Cart from './pages/Cart'
 import Checkout from './pages/Checkout'
 import Auth from './pages/Auth'
 import Profile from './pages/Profile'
+import Wishlist from './pages/Wishlist'
 import { ThemeProvider } from '@mui/material'
 import { theme } from './theme'
 import './styles.css'
@@ -32,6 +33,7 @@ createRoot(document.getElementById('root')).render(
               }
             />
             <Route path="/product/:id" element={<ProductDetails />} />
+            <Route path="/wishlist" element={<Wishlist />} />
             <Route
               path="/cart"
               element={

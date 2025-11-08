@@ -15,7 +15,7 @@ import {
   Menu,
   MenuItem,
 } from '@mui/material';
-import { ShoppingCart, SportsBasketball, Menu as MenuIcon } from '@mui/icons-material';
+import { ShoppingCart, SportsBasketball, Menu as MenuIcon, Favorite } from '@mui/icons-material';
 import AccountCircle from '@mui/icons-material/AccountCircle'
 import { getCustomer, clearCustomer } from '../auth'
 
@@ -32,6 +32,7 @@ const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [anchorEl, setAnchorEl] = useState(null);
+  const [profileAnchorEl, setProfileAnchorEl] = useState(null);
   const [isHovered, setIsHovered] = useState(false);
   const [customer, setCustomer] = useState(null)
   const [cartCount, setCartCount] = useState(0)
@@ -42,6 +43,14 @@ const Navbar = () => {
 
   const handleMenuClose = () => {
     setAnchorEl(null);
+  };
+
+  const handleProfileMenuClick = (event) => {
+    setProfileAnchorEl(event.currentTarget);
+  };
+
+  const handleProfileMenuClose = () => {
+    setProfileAnchorEl(null);
   };
 
   React.useEffect(()=>{
@@ -63,6 +72,7 @@ const Navbar = () => {
     fetch(`${import.meta.env.VITE_API_BASE || 'http://localhost:4000/api'}/carts/${customer.customer_id}`)
       .then(r=>r.json()).then(data=> setCartCount((data.items||[]).length)).catch(()=>{})
   }, [customer])
+
 
   const navButtonVariants = {
     hover: {
@@ -173,6 +183,21 @@ const Navbar = () => {
                 <IconButton 
                   color="inherit" 
                   component={Link} 
+                  to="/wishlist"
+                  sx={{ ml: 1 }}
+                  aria-label="Wishlist"
+                >
+                  <Favorite />
+                </IconButton>
+              </motion.div>
+              <motion.div
+                variants={navButtonVariants}
+                whileHover="hover"
+                whileTap="tap"
+              >
+                <IconButton 
+                  color="inherit" 
+                  component={Link} 
                   to="/cart"
                   sx={{ ml: 1 }}
                 >
@@ -182,7 +207,7 @@ const Navbar = () => {
                 </IconButton>
               </motion.div>
               <motion.div variants={navButtonVariants} whileHover="hover" whileTap="tap">
-                <IconButton color="inherit" component={Link} to="/profile" sx={{ ml: 1 }}>
+                <IconButton color="inherit" onClick={handleProfileMenuClick} sx={{ ml: 1 }} aria-controls={Boolean(profileAnchorEl) ? 'profile-menu' : undefined} aria-haspopup="true" aria-expanded={Boolean(profileAnchorEl) ? 'true' : undefined}>
                   <AccountCircle />
                 </IconButton>
               </motion.div>
@@ -192,7 +217,9 @@ const Navbar = () => {
             <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 1, ml: 2 }}>
               {customer ? (
                 <>
-                  <Button color="inherit" component={Link} to="/profile">Hi, {customer.name}</Button>
+                  <Button color="inherit" onClick={handleProfileMenuClick} aria-controls={Boolean(profileAnchorEl) ? 'profile-menu' : undefined} aria-haspopup="true" aria-expanded={Boolean(profileAnchorEl) ? 'true' : undefined}>
+                    Hi, {customer.name}
+                  </Button>
                   <Button color="inherit" onClick={() => { clearCustomer(); setCustomer(null); window.location.reload() }}>Sign out</Button>
                 </>
               ) : (
@@ -210,7 +237,7 @@ const Navbar = () => {
                 open={Boolean(anchorEl)}
                 onClose={handleMenuClose}
               >
-                {['Home', 'Products', 'About', 'Cart'].map((item) => (
+                {['Home', 'Products', 'About', 'Wishlist', 'Cart'].map((item) => (
                   <MenuItem 
                     key={item}
                     onClick={() => {
@@ -227,6 +254,21 @@ const Navbar = () => {
             </Box>
           </Toolbar>
         </Container>
+
+        {/* Profile dropdown menu */}
+        <Menu
+          id="profile-menu"
+          anchorEl={profileAnchorEl}
+          open={Boolean(profileAnchorEl)}
+          onClose={handleProfileMenuClose}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+          transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+        >
+          <MenuItem onClick={() => { handleProfileMenuClose(); navigate('/profile') }}>My Profile</MenuItem>
+          <MenuItem onClick={() => { handleProfileMenuClose(); navigate('/orders') }}>My Orders</MenuItem>
+          <MenuItem onClick={() => { handleProfileMenuClose(); navigate('/wishlist') }}>Wishlist</MenuItem>
+          <MenuItem onClick={() => { handleProfileMenuClose(); navigate('/cart') }}>Cart</MenuItem>
+        </Menu>
       </AppBar>
     </HideOnScroll>
   );
