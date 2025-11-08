@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -20,6 +21,7 @@ import {
 import { HERO_BG, CATEGORIES } from '../assets/images';
 
 const HomePage = () => {
+  const navigate = useNavigate();
   const fadeIn = {
     initial: { opacity: 0, y: 20 },
     animate: { opacity: 1, y: 0 },
@@ -209,6 +211,7 @@ const HomePage = () => {
                   viewport={{ once: true }}
                 >
                   <Card
+                    onClick={() => navigate(`/products?sport=${encodeURIComponent(sport.name)}`)}
                     sx={{
                       height: '280px',
                       display: 'flex',
@@ -216,6 +219,7 @@ const HomePage = () => {
                       alignItems: 'center',
                       position: 'relative',
                       overflow: 'hidden',
+                      cursor: 'pointer',
                       '&::before': {
                         content: '""',
                         position: 'absolute',

@@ -16,6 +16,7 @@ import {
 import { Search, SportsSoccer } from '@mui/icons-material';
 import ProductCard from '../components/ProductCard';
 import api from '../api';
+import { useLocation } from 'react-router-dom';
 
 const Products = () => {
   const [products, setProducts] = useState([]);
@@ -24,6 +25,7 @@ const Products = () => {
   const [sportType, setSportType] = useState('all');
   const [categories, setCategories] = useState([])
   const [categoryId, setCategoryId] = useState('all')
+  const location = useLocation()
 
   useEffect(() => {
     const load = async () => {
@@ -36,6 +38,13 @@ const Products = () => {
     }
     load()
   }, []);
+
+  // Pick sport from query string, e.g. /products?sport=Football
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    const sp = params.get('sport')
+    if (sp) { setSportType(sp); setCategoryId('all') }
+  }, [location.search])
 
   // derive sport types dynamically from products
   const sportTypes = React.useMemo(() => {
