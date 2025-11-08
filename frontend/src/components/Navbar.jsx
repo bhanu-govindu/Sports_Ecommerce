@@ -142,7 +142,7 @@ const Navbar = () => {
 
             {/* Desktop Menu */}
             <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
-              {['/', '/products', '/about'].map((path) => (
+              {['/', '/products'].map((path) => (
                 <motion.div
                   key={path}
                   variants={navButtonVariants}
@@ -237,7 +237,7 @@ const Navbar = () => {
                 open={Boolean(anchorEl)}
                 onClose={handleMenuClose}
               >
-                {['Home', 'Products', 'About', 'Wishlist', 'Cart'].map((item) => (
+                {['Home', 'Products', 'Wishlist', 'Cart'].map((item) => (
                   <MenuItem 
                     key={item}
                     onClick={() => {
@@ -264,6 +264,9 @@ const Navbar = () => {
           anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
           transformOrigin={{ vertical: 'top', horizontal: 'right' }}
         >
+          {customer && customer.email === 'admin@dbms.com' && (
+            <MenuItem onClick={() => { handleProfileMenuClose(); navigate('/admin') }}>Admin Dashboard</MenuItem>
+          )}
           <MenuItem onClick={() => { handleProfileMenuClose(); navigate('/profile') }}>My Profile</MenuItem>
           <MenuItem onClick={() => { handleProfileMenuClose(); navigate('/orders') }}>My Orders</MenuItem>
           <MenuItem onClick={() => { handleProfileMenuClose(); navigate('/wishlist') }}>Wishlist</MenuItem>

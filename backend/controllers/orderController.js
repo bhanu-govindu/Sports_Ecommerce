@@ -70,3 +70,84 @@ function rollback(conn, res, err) {
     res.status(400).json({ error: err.message || 'Transaction failed' });
   });
 }
+
+// Admin: list all orders
+export const getAllOrders = (req, res) => {
+  const conn = db;
+  conn.getConnection((err, connection) => {
+    if (err) return res.status(500).json({ error: err.message });
+    const sql = `SELECT o.order_id, o.order_date, o.total_amount AS total, o.status, o.customer_id, c.name AS customer_name
+                 FROM \`order\` o
+                 LEFT JOIN customer c ON o.customer_id = c.customer_id
+                 ORDER BY o.order_date DESC`;
+    connection.query(sql, (errQ, rows) => {
+      connection.release();
+      if (errQ) return res.status(500).json({ error: errQ.message });
+      return res.json(rows);
+    });
+  });
+};
+
+// Admin: update order status
+export const updateOrderStatus = (req, res) => {
+  const { orderId } = req.params;
+  const { status } = req.body;
+  if (!status) return res.status(400).json({ error: 'Status is required' });
+  const conn = db;
+  conn.getConnection((err, connection) => {
+    if (err) return res.status(500).json({ error: err.message });
+    connection.query('UPDATE `order` SET status = ? WHERE order_id = ?', [status, orderId], (errU, result) => {
+      connection.release();
+      if (errU) return res.status(500).json({ error: errU.message });
+      return res.json({ success: true });
+    });
+  });
+};
+
+// Get order by id including items
+export const getOrderById = (req, res) => {
+  const { orderId } = req.params;
+  const conn = db;
+  conn.getConnection((err, connection) => {
+    if (err) return res.status(500).json({ error: err.message });
+    const q1 = `SELECT o.order_id, o.order_date, o.total_amount AS total, o.status, o.customer_id, c.name AS customer_name, c.email
+                FROM \`order\` o LEFT JOIN customer c ON o.customer_id = c.customer_id WHERE o.order_id = ?`;
+    connection.query(q1, [orderId], (errO, rows) => {
+      if (errO) { connection.release(); return res.status(500).json({ error: errO.message }); }
+      if (!rows || rows.length === 0) { connection.release(); return res.status(404).json({ error: 'Order not found' }); }
+      const order = rows[0];
+      const q2 = `SELECT oi.*, p.product_name, p.image_url FROM order_item oi JOIN product p ON oi.product_id = p.product_id WHERE oi.order_id = ?`;
+      connection.query(q2, [orderId], (errI, items) => {
+        connection.release();
+        if (errI) return res.status(500).json({ error: errI.message });
+        order.items = items || [];
+        return res.json(order);
+      });
+    });
+  });
+};
+
+// Get orders for a customer (with items) - used to determine delivered orders for review eligibility
+export const getOrdersByCustomer = (req, res) => {
+  const { customerId } = req.params;
+  const conn = db;
+  conn.getConnection((err, connection) => {
+    if (err) return res.status(500).json({ error: err.message });
+    const q = `SELECT o.order_id, o.order_date, o.total_amount AS total, o.status
+               FROM \`order\` o WHERE o.customer_id = ? ORDER BY o.order_date DESC`;
+    connection.query(q, [customerId], (errO, orders) => {
+      if (errO) { connection.release(); return res.status(500).json({ error: errO.message }); }
+      const orderIds = (orders || []).map(o => o.order_id);
+      if (orderIds.length === 0) { connection.release(); return res.json([]); }
+      const q2 = `SELECT oi.order_id, oi.product_id, oi.quantity, p.product_name FROM order_item oi JOIN product p ON oi.product_id = p.product_id WHERE oi.order_id IN (${orderIds.join(',')})`;
+      connection.query(q2, (errI, items) => {
+        connection.release();
+        if (errI) return res.status(500).json({ error: errI.message });
+        const itemsByOrder = {};
+        (items || []).forEach(it => { itemsByOrder[it.order_id] = itemsByOrder[it.order_id] || []; itemsByOrder[it.order_id].push(it) });
+        const resOrders = orders.map(o => ({ ...o, items: itemsByOrder[o.order_id] || [] }));
+        return res.json(resOrders);
+      });
+    });
+  });
+};

@@ -25,6 +25,7 @@ const Products = () => {
   const [sportType, setSportType] = useState('all');
   const [categories, setCategories] = useState([])
   const [categoryId, setCategoryId] = useState('all')
+  const [sortOrder, setSortOrder] = useState('default')
   const location = useLocation()
 
   useEffect(() => {
@@ -65,6 +66,14 @@ const Products = () => {
     (sportType === 'all' || product.sport_type === sportType) &&
     (categoryId === 'all' || String(product.category_id) === String(categoryId))
   );
+
+  const sortedProducts = React.useMemo(() => {
+    const arr = [...filteredProducts];
+    if (sortOrder === 'price_asc') return arr.sort((a, b) => (a.price || 0) - (b.price || 0));
+    if (sortOrder === 'price_desc') return arr.sort((a, b) => (b.price || 0) - (a.price || 0));
+    if (sortOrder === 'newest') return arr.sort((a, b) => new Date(b.created_at || b.createdAt || 0) - new Date(a.created_at || a.createdAt || 0));
+    return arr;
+  }, [filteredProducts, sortOrder]);
 
   return (
     <Box>
@@ -132,6 +141,18 @@ const Products = () => {
                     ))}
                   </Select>
                 </FormControl>
+                <FormControl variant="standard" sx={{ ml: 2 }}>
+                  <Select
+                    value={sortOrder}
+                    onChange={(e) => setSortOrder(e.target.value)}
+                    sx={{ minWidth: 180 }}
+                  >
+                    <MenuItem value="default">Sort: Default</MenuItem>
+                    <MenuItem value="price_asc">Price: Low to High</MenuItem>
+                    <MenuItem value="price_desc">Price: High to Low</MenuItem>
+                    <MenuItem value="newest">Sort: Newest</MenuItem>
+                  </Select>
+                </FormControl>
               </Box>
             </Grid>
 
@@ -172,7 +193,7 @@ const Products = () => {
                   />
                 </Grid>
               ))
-            : filteredProducts.map((product) => (
+            : sortedProducts.map((product) => (
                 <Grid item xs={12} sm={6} md={4} lg={3} key={product.product_id}>
                   <ProductCard product={product} />
                 </Grid>

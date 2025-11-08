@@ -115,6 +115,7 @@ export default function Profile(){
 
             <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
               <Button variant="outlined" onClick={() => { clearCustomer(); window.location.href = '/' }}>Sign out</Button>
+              <Button variant="contained" onClick={() => window.location.href = '/orders'}>My Orders</Button>
             </Box>
           </Grid>
         </Grid>

@@ -49,6 +49,13 @@ export default function Auth(){
         alert('Password is required');
         return;
       }
+      // Special-case admin login (local admin credentials)
+      if (email === 'admin@dbms.com' && password === 'Admin@123') {
+        const customer = { customer_id: 'admin', name: 'Admin', email: 'admin@dbms.com', isAdmin: true }
+        setCustomer(customer)
+        navigate('/admin')
+        return
+      }
       const res = await api.post('/customers/login', { email, password })
   const customer = res.data
   setCustomer(customer)

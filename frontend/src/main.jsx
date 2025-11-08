@@ -3,6 +3,8 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import App from './App'
 import ProtectedRoute from './components/ProtectedRoute'
+import AdminRoute from './components/AdminRoute'
+import Admin from './pages/Admin'
 import Home from './pages/Home'
 import Products from './pages/Products'
 import ProductDetails from './pages/ProductDetails'
@@ -10,6 +12,7 @@ import Cart from './pages/Cart'
 import Checkout from './pages/Checkout'
 import Auth from './pages/Auth'
 import Profile from './pages/Profile'
+import Orders from './pages/Orders'
 import Wishlist from './pages/Wishlist'
 import { ThemeProvider } from '@mui/material'
 import { theme } from './theme'
@@ -32,6 +35,14 @@ createRoot(document.getElementById('root')).render(
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/orders"
+              element={
+                <ProtectedRoute>
+                  <Orders />
+                </ProtectedRoute>
+              }
+            />
             <Route path="/product/:id" element={<ProductDetails />} />
             <Route path="/wishlist" element={<Wishlist />} />
             <Route
@@ -48,6 +59,14 @@ createRoot(document.getElementById('root')).render(
                 <ProtectedRoute>
                   <Checkout />
                 </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <AdminRoute>
+                  <Admin />
+                </AdminRoute>
               }
             />
           </Routes>

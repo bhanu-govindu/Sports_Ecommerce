@@ -31,6 +31,9 @@ export default function ProductDetails(){
   const [qty, setQty] = useState(1)
   const [wish, setWish] = useState(false)
   const [adding, setAdding] = useState(false)
+  const [canReview, setCanReview] = useState(false)
+  const [reviewRating, setReviewRating] = useState(5)
+  const [reviewComment, setReviewComment] = useState('')
 
   useEffect(()=>{
     let mounted = true
@@ -40,6 +43,18 @@ export default function ProductDetails(){
       .catch(console.error)
       .finally(() => mounted && setLoading(false))
     return () => { mounted = false }
+  }, [id])
+
+  // Check if authenticated customer has a delivered order containing this product
+  useEffect(() => {
+    const c = getCustomer()
+    if (!c) return
+    api.get(`/orders/customer/${c.customer_id}`)
+      .then(res => {
+        const orders = res.data || []
+        const eligible = orders.some(o => (o.status === 'Delivered') && (o.items || []).some(it => String(it.product_id) === String(id)))
+        setCanReview(eligible)
+      }).catch(err => { console.error('could not fetch customer orders', err); setCanReview(false) })
   }, [id])
 
   // Ensure page opens at the top whenever navigating to a product
@@ -246,6 +261,29 @@ export default function ProductDetails(){
                   </Box>
                 ))}
               </Stack>
+            )}
+
+            {/* Review form - only allowed if customer has a delivered order containing this product */}
+            {getCustomer() && (
+              <Box sx={{ mt: 3 }}>
+                {canReview ? (
+                  <Box component="form" onSubmit={async (e) => { e.preventDefault(); try {
+                    const c = getCustomer();
+                    await api.post('/reviews', { product_id: id, customer_id: c.customer_id, rating: reviewRating, comment: reviewComment });
+                    alert('Review submitted');
+                    // refresh product reviews
+                    const res = await api.get(`/products/${id}`); setData(res.data);
+                    setReviewComment(''); setReviewRating(5);
+                  } catch (err) { console.error(err); alert('Failed to submit review') } }}>
+                    <Typography variant="subtitle1" sx={{ mb: 1 }}>Write a review</Typography>
+                    <Rating value={reviewRating} onChange={(e, v) => setReviewRating(v || 5)} />
+                    <TextField fullWidth multiline rows={3} value={reviewComment} onChange={e=>setReviewComment(e.target.value)} sx={{ mt: 1, mb: 1 }} placeholder="Share your experience" />
+                    <Button variant="contained" type="submit">Submit Review</Button>
+                  </Box>
+                ) : (
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>You can leave a review after the order is delivered.</Typography>
+                )}
+              </Box>
             )}
           </Paper>
         </Grid>
