@@ -3,6 +3,7 @@ import api from '../api'
 import CartItem from '../components/CartItem'
 import { Link } from 'react-router-dom'
 import { getCustomer } from '../auth'
+import { formatINR } from '../currency'
 
 export default function Cart(){
   const [items, setItems] = useState([])
@@ -36,7 +37,7 @@ export default function Cart(){
             {items.map(it => <CartItem key={it.cart_item_id} item={it} onRemove={removeItem} />)}
           </div>
           <div className="checkout-box">
-            <div className="total">Total: ₹{total.toFixed(2)}</div>
+            <div className="total">Total: {formatINR(total)}</div>
             <Link to="/checkout" className="btn">Checkout</Link>
           </div>
         </>

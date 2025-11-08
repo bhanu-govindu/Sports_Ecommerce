@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import api from '../api'
 import { useNavigate } from 'react-router-dom'
 import { getCustomer } from '../auth'
+import { formatINR } from '../currency'
 
 export default function Checkout(){
   const CUSTOMER = getCustomer()
@@ -47,7 +48,7 @@ export default function Checkout(){
       <label>Billing Address</label>
       <textarea value={billingAddress} onChange={(e)=>setBillingAddress(e.target.value)} />
       <div style={{ marginTop: 12 }}>
-        <div>Total: ₹{total.toFixed(2)}</div>
+        <div>Total: {formatINR(total)}</div>
         <div style={{ color: 'red', marginTop: 8 }}>
           {billingAddress.trim() === '' && <small>Please enter a billing/shipping address to place the order.</small>}
         </div>

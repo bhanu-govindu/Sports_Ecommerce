@@ -1,4 +1,5 @@
 import React from 'react'
+import { formatINR } from '../currency'
 
 export default function CartItem({ item, onRemove }) {
   return (
@@ -8,7 +9,7 @@ export default function CartItem({ item, onRemove }) {
         <div className="cart-qty">Qty: {item.quantity}</div>
       </div>
       <div className="cart-right">
-        <div className="cart-price">₹{(item.price * item.quantity).toFixed(2)}</div>
+        <div className="cart-price">{formatINR(item.price * item.quantity)}</div>
         <button className="link-btn" onClick={() => onRemove(item.cart_item_id)}>Remove</button>
       </div>
     </div>

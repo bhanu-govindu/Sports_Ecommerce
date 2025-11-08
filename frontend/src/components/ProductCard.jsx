@@ -17,6 +17,8 @@ import { AddShoppingCart, Favorite, Share } from '@mui/icons-material';
 import api from '../api'
 import { getCustomer } from '../auth'
 import { isLiked, toggleWishlist } from '../wishlist'
+import { formatINR } from '../currency'
+import { getProductImage } from '../assets/images'
 
 const ProductCard = ({ product }) => {
   const navigate = useNavigate();
@@ -28,8 +30,8 @@ const ProductCard = ({ product }) => {
     try { setIsFavorite(isLiked(product.product_id)) } catch {}
   }, [product?.product_id])
 
-  // Placeholder image URL - replace with your actual product images
-  const imageUrl = `https://source.unsplash.com/400x300/?${product.sport_type},sports`;
+  // Derive a consistent product image
+  const imageUrl = getProductImage(product)
 
   const cardVariants = {
     hidden: { opacity: 0, y: 20 },
@@ -73,6 +75,7 @@ const ProductCard = ({ product }) => {
       onHoverEnd={() => setIsHovered(false)}
     >
       <Card 
+        onClick={() => navigate(`/product/${product.product_id}`)}
         sx={{ 
           maxWidth: 345,
           height: '100%',
@@ -84,6 +87,7 @@ const ProductCard = ({ product }) => {
           backdropFilter: 'blur(10px)',
           boxShadow: isHovered ? theme.shadows[10] : theme.shadows[2],
           transition: 'box-shadow 0.3s ease-in-out',
+          cursor: 'pointer'
         }}
       >
         <motion.div
@@ -134,6 +138,7 @@ const ProductCard = ({ product }) => {
                   backgroundColor: 'white',
                   '&:hover': { backgroundColor: 'white' }
                 }}
+                onClick={(e) => e.stopPropagation?.()}
               >
                 <Share sx={{ color: '#757575' }} />
               </IconButton>
@@ -211,7 +216,7 @@ const ProductCard = ({ product }) => {
             transition={{ duration: 0.2 }}
           >
             <Typography variant="h6" color="primary" sx={{ mb: 2, fontWeight: 'bold' }}>
-              ${product.price}
+              {formatINR(product.price)}
             </Typography>
           </motion.div>
 
@@ -230,7 +235,7 @@ const ProductCard = ({ product }) => {
                 fullWidth
                 variant="contained" 
                 size="small"
-                onClick={() => navigate(`/product/${product.product_id}`)}
+                onClick={(e) => { e.stopPropagation?.(); navigate(`/product/${product.product_id}`) }}
                 sx={{ 
                   backgroundColor: '#1a237e',
                   '&:hover': {
@@ -252,7 +257,8 @@ const ProductCard = ({ product }) => {
                 variant="outlined"
                 size="small"
                 startIcon={<AddShoppingCart />}
-                onClick={async () => {
+                onClick={async (e) => {
+                  e.stopPropagation?.();
                   try {
                     const customer = getCustomer()
                     if (!customer) {
