@@ -1,35 +1,94 @@
 import React, { useState, useEffect } from 'react'
-import { Box, Paper, Tabs, Tab, TextField, Button, Typography, Grid, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Alert, Select, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material'
+import { Box, Paper, Tabs, Tab, TextField, Button, Typography, Grid, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Alert, Select, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions, IconButton } from '@mui/material'
+import { Add, Edit } from '@mui/icons-material'
 import api from '../api'
 
 export default function Admin(){
   const [tab, setTab] = useState(0)
-  const [product, setProduct] = useState({ name: '', price: '', category: '', image_url: '', description: '', quantity: '' })
+  const [product, setProduct] = useState({ product_name: '', price: '', sport_type: '', brand: '', image_url: '', description: '', stock_quantity: '' })
+  const [products, setProducts] = useState([])
   const [orders, setOrders] = useState([])
   const [orderDetail, setOrderDetail] = useState(null)
   const [detailOpen, setDetailOpen] = useState(false)
   const [message, setMessage] = useState(null)
   const [reviewsList, setReviewsList] = useState([])
   const [feedbacksList, setFeedbacksList] = useState([])
+  const [isAddingNew, setIsAddingNew] = useState(true)
+  const [stockIncrement, setStockIncrement] = useState({})
 
+  useEffect(()=>{ if (tab === 0) fetchProducts() }, [tab])
   useEffect(()=>{ if (tab === 1) fetchOrders() }, [tab])
   useEffect(()=>{ if (tab === 2) { fetchReviews(); fetchFeedbacks(); } }, [tab])
 
   const handleTab = (_, v) => setTab(v)
 
+  const fetchProducts = async () => {
+    try {
+      const res = await api.get('/products')
+      setProducts(res.data || [])
+    } catch (err) {
+      console.error(err)
+      setMessage({ type: 'error', text: 'Failed to fetch products' })
+      setTimeout(()=>setMessage(null), 4000)
+    }
+  }
+
   const handleProductChange = (field) => (e) => setProduct(prev => ({ ...prev, [field]: e.target.value }))
+
+  const handleStockIncrement = (productId) => (e) => setStockIncrement(prev => ({ ...prev, [productId]: Number(e.target.value) || 0 }))
 
   const submitProduct = async () => {
     try {
-      const payload = { ...product, price: Number(product.price), quantity: Number(product.quantity) }
-      await api.post('/products', payload)
+      if (!product.product_name || !product.price || !product.stock_quantity) {
+        setMessage({ type: 'error', text: 'Please fill in required fields: Name, Price, Quantity' })
+        setTimeout(()=>setMessage(null), 4000)
+        return
+      }
+      const payload = { ...product, price: Number(product.price), stock_quantity: Number(product.stock_quantity) }
+      console.log('Submitting product:', payload)
+      const res = await api.post('/products', payload)
+      console.log('Product added response:', res.data)
       setMessage({ type: 'success', text: 'Product added successfully' })
-      setProduct({ name: '', price: '', category: '', image_url: '', description: '', quantity: '' })
+      setProduct({ product_name: '', price: '', sport_type: '', brand: '', image_url: '', description: '', stock_quantity: '' })
+      fetchProducts()
+    } catch (err) {
+      console.error('Error adding product:', err)
+      console.error('Error response:', err.response?.data)
+      const errorMsg = err.response?.data?.error || err.response?.data?.message || err.message || 'Unknown error'
+      setMessage({ type: 'error', text: 'Failed to add product: ' + errorMsg })
+    }
+    setTimeout(()=>setMessage(null), 5000)
+  }
+
+  const increaseStock = async (productId) => {
+    const qty = stockIncrement[productId]
+    if (!qty || qty <= 0) {
+      setMessage({ type: 'error', text: 'Please enter a valid quantity' })
+      setTimeout(()=>setMessage(null), 3000)
+      return
+    }
+    try {
+      const prod = products.find(p => p.product_id === productId)
+      if (!prod) return
+      const newStock = (prod.stock_quantity || 0) + qty
+      await api.put(`/products/${productId}`, { 
+        product_name: prod.product_name,
+        description: prod.description,
+        price: prod.price,
+        stock_quantity: newStock,
+        sport_type: prod.sport_type,
+        brand: prod.brand,
+        category_id: prod.category_id,
+        supplier_id: prod.supplier_id
+      })
+      setMessage({ type: 'success', text: `Stock increased by ${qty}` })
+      setStockIncrement(prev => ({ ...prev, [productId]: 0 }))
+      fetchProducts()
     } catch (err) {
       console.error(err)
-      setMessage({ type: 'error', text: 'Failed to add product: ' + (err.response?.data?.error || err.message) })
+      setMessage({ type: 'error', text: 'Failed to increase stock: ' + (err.response?.data?.error || err.message) })
     }
-    setTimeout(()=>setMessage(null), 4000)
+    setTimeout(()=>setMessage(null), 3000)
   }
 
   const fetchOrders = async () => {
@@ -103,21 +162,101 @@ export default function Admin(){
         {message && <Alert severity={message.type} sx={{ mb: 2 }}>{message.text}</Alert>}
 
         {tab === 0 && (
-          <Grid container spacing={2}>
-            <Grid item xs={12} md={6}>
-              <TextField fullWidth label="Name" value={product.name} onChange={handleProductChange('name')} sx={{ mb: 2 }} />
-              <TextField fullWidth label="Price" value={product.price} onChange={handleProductChange('price')} sx={{ mb: 2 }} />
-              <TextField fullWidth label="Category" value={product.category} onChange={handleProductChange('category')} sx={{ mb: 2 }} />
-              <TextField fullWidth label="Image URL" value={product.image_url} onChange={handleProductChange('image_url')} sx={{ mb: 2 }} />
-              <TextField fullWidth label="Quantity" value={product.quantity} onChange={handleProductChange('quantity')} sx={{ mb: 2 }} />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField fullWidth label="Description" value={product.description} onChange={handleProductChange('description')} sx={{ mb: 2 }} multiline rows={8} />
-              <Box sx={{ display: 'flex', gap: 1 }}>
-                <Button variant="contained" onClick={submitProduct}>Add Product</Button>
+          <>
+            {/* Toggle between Add New and Increase Stock */}
+            <Box sx={{ mb: 3, display: 'flex', gap: 1 }}>
+              <Button 
+                variant={isAddingNew ? "contained" : "outlined"} 
+                onClick={() => setIsAddingNew(true)}
+              >
+                Add New Product
+              </Button>
+              <Button 
+                variant={!isAddingNew ? "contained" : "outlined"} 
+                onClick={() => setIsAddingNew(false)}
+              >
+                Increase Stock
+              </Button>
+            </Box>
+
+            {isAddingNew ? (
+              // Add New Product Form
+              <Grid container spacing={2}>
+                <Grid item xs={12} md={6}>
+                  <TextField fullWidth label="Product Name *" value={product.product_name} onChange={handleProductChange('product_name')} sx={{ mb: 2 }} required />
+                  <TextField fullWidth label="Price *" type="number" value={product.price} onChange={handleProductChange('price')} sx={{ mb: 2 }} required />
+                  <TextField fullWidth label="Stock Quantity *" type="number" value={product.stock_quantity} onChange={handleProductChange('stock_quantity')} sx={{ mb: 2 }} required />
+                  <TextField fullWidth label="Sport Type" value={product.sport_type} onChange={handleProductChange('sport_type')} sx={{ mb: 2 }} placeholder="e.g., Football, Basketball" />
+                  <TextField fullWidth label="Brand" value={product.brand} onChange={handleProductChange('brand')} sx={{ mb: 2 }} />
+                  <TextField fullWidth label="Image URL" value={product.image_url} onChange={handleProductChange('image_url')} sx={{ mb: 2 }} />
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <TextField fullWidth label="Description" value={product.description} onChange={handleProductChange('description')} sx={{ mb: 2 }} multiline rows={8} />
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Button variant="contained" onClick={submitProduct}>Add Product</Button>
+                  </Box>
+                  <Typography variant="caption" color="text.secondary" sx={{ mt: 2 }}>Fields marked with * are required</Typography>
+                </Grid>
+              </Grid>
+            ) : (
+              // Increase Stock List
+              <Box>
+                <Typography variant="h6" sx={{ mb: 2 }}>Existing Products - Increase Stock</Typography>
+                <TableContainer component={Paper}>
+                  <Table>
+                    <TableHead>
+                      <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+                        <TableCell><strong>Product Name</strong></TableCell>
+                        <TableCell align="right"><strong>Current Stock</strong></TableCell>
+                        <TableCell align="center"><strong>Price</strong></TableCell>
+                        <TableCell align="center"><strong>Sport Type</strong></TableCell>
+                        <TableCell align="center"><strong>Add Quantity</strong></TableCell>
+                        <TableCell align="center"><strong>Action</strong></TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {products.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
+                            <Typography color="text.secondary">No products found</Typography>
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        products.map(prod => (
+                          <TableRow key={prod.product_id}>
+                            <TableCell>{prod.product_name}</TableCell>
+                            <TableCell align="right" sx={{ fontWeight: 600 }}>{prod.stock_quantity || 0}</TableCell>
+                            <TableCell align="center">₹{prod.price}</TableCell>
+                            <TableCell align="center">{prod.sport_type || '-'}</TableCell>
+                            <TableCell align="center">
+                              <TextField
+                                type="number"
+                                size="small"
+                                inputProps={{ min: 0, style: { textAlign: 'center', width: 70 } }}
+                                value={stockIncrement[prod.product_id] || ''}
+                                onChange={handleStockIncrement(prod.product_id)}
+                              />
+                            </TableCell>
+                            <TableCell align="center">
+                              <Button
+                                size="small"
+                                variant="contained"
+                                color="primary"
+                                startIcon={<Add />}
+                                onClick={() => increaseStock(prod.product_id)}
+                              >
+                                Add
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
               </Box>
-            </Grid>
-          </Grid>
+            )}
+          </>
         )}
 
         {tab === 1 && (

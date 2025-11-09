@@ -33,6 +33,12 @@ export const getProductById = (req, res) => {
 
 export const addProduct = (req, res) => {
   const { product_name, description, price, stock_quantity, sport_type, brand, category_id, supplier_id, image_url } = req.body;
+  
+  // Validate required fields
+  if (!product_name || price === undefined || stock_quantity === undefined) {
+    return res.status(400).json({ error: 'product_name, price, and stock_quantity are required' });
+  }
+
   const qWithImage = `INSERT INTO product (product_name, description, price, stock_quantity, sport_type, brand, category_id, supplier_id, image_url)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
   const qWithoutImage = `INSERT INTO product (product_name, description, price, stock_quantity, sport_type, brand, category_id, supplier_id)
@@ -41,6 +47,7 @@ export const addProduct = (req, res) => {
   // Try insert with image_url first; if the column doesn't exist, fall back gracefully.
   db.query(qWithImage, [product_name, description, price, stock_quantity, sport_type, brand, category_id || null, supplier_id || null, image_url || null], (err, result) => {
     if (err) {
+      console.error('Product insert error:', err.code, err.message);
       if (err.code === 'ER_BAD_FIELD_ERROR' || /unknown column/i.test(err.message)) {
         return db.query(qWithoutImage, [product_name, description, price, stock_quantity, sport_type, brand, category_id || null, supplier_id || null], (err2, result2) => {
           if (err2) return res.status(500).json({ error: err2.message });
