@@ -39,7 +39,7 @@ app.use('/api/feedbacks', feedbackRoutes);
 app.use('/api/admin', adminRoutes);
 
 app.get('/', (req, res) => {
-  res.send('Sports E-Commerce backend is running');
+  res.send('SportNova backend is running');
 });
 
 app.listen(PORT, () => console.log(`Server listening on http://localhost:${PORT}`));

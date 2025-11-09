@@ -152,7 +152,7 @@ const Navbar = () => {
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.2 }}
                 >
-                  SportsShop
+                  SportNova
                 </Typography>
               </Box>
             </motion.div>

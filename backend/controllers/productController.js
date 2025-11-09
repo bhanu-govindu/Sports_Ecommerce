@@ -63,10 +63,59 @@ export const addProduct = (req, res) => {
 export const updateProduct = (req, res) => {
   const id = req.params.id;
   const { product_name, description, price, stock_quantity, sport_type, brand, category_id, supplier_id, image_url } = req.body;
-  const q = `UPDATE product SET product_name = ?, description = ?, price = ?, stock_quantity = ?, sport_type = ?, brand = ?, category_id = ?, supplier_id = ?, image_url = ? WHERE product_id = ?`;
-  db.query(q, [product_name, description, price, stock_quantity, sport_type, brand, category_id || null, supplier_id || null, image_url || null, id], (err, result) => {
+  
+  // First update the product details
+  const q = `UPDATE product SET product_name = ?, description = ?, price = ?, stock_quantity = ?, sport_type = ?, brand = ?, category_id = ?, supplier_id = ? WHERE product_id = ?`;
+  db.query(q, [product_name, description, price, stock_quantity, sport_type, brand, category_id || null, supplier_id || null, id], (err, result) => {
     if (err) return res.status(500).json({ error: err.message });
     if (result.affectedRows === 0) return res.status(404).json({ message: 'Product not found' });
-    res.json({ success: true });
+
+    // If an image URL was provided, update it using our stored procedure
+    if (image_url) {
+      db.query('CALL update_product_primary_image(?, ?)', [id, image_url], (err2) => {
+        if (err2) {
+          console.error('Error updating product image:', err2);
+          return res.status(500).json({ error: 'Product updated but failed to update image' });
+        }
+        res.json({ success: true });
+      });
+    } else {
+      res.json({ success: true });
+    }
+  });
+};
+
+export const deleteProduct = (req, res) => {
+  const id = req.params.id;
+  
+  // First check if the product exists and if it's safe to delete
+  db.query('SELECT * FROM product WHERE product_id = ?', [id], (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (!results.length) return res.status(404).json({ message: 'Product not found' });
+
+    // Check if product is referenced in order_items
+    db.query('SELECT COUNT(*) as count FROM order_item WHERE product_id = ?', [id], (err2, orderResults) => {
+      if (err2) return res.status(500).json({ error: err2.message });
+      
+      if (orderResults[0].count > 0) {
+        return res.status(400).json({ 
+          error: 'Cannot delete product as it has associated orders. Consider updating stock to 0 instead.' 
+        });
+      }
+
+      // Delete all images associated with this product first
+      db.query('DELETE FROM product_image WHERE product_id = ?', [id], (err3) => {
+        if (err3) {
+          console.error('Error deleting product images:', err3);
+          // Continue with product deletion even if image deletion fails
+        }
+
+        // If no orders reference this product, proceed with deletion
+        db.query('DELETE FROM product WHERE product_id = ?', [id], (err4, deleteResult) => {
+          if (err4) return res.status(500).json({ error: err4.message });
+          res.json({ success: true, message: 'Product deleted successfully' });
+        });
+      });
+    });
   });
 };

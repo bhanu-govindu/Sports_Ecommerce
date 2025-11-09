@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Box, Paper, Tabs, Tab, TextField, Button, Typography, Grid, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Alert, Select, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions, IconButton } from '@mui/material'
-import { Add, Edit } from '@mui/icons-material'
+import { Add, Edit, Delete, Warning } from '@mui/icons-material'
 import api from '../api'
 
 export default function Admin(){
@@ -15,6 +15,11 @@ export default function Admin(){
   const [feedbacksList, setFeedbacksList] = useState([])
   const [isAddingNew, setIsAddingNew] = useState(true)
   const [stockIncrement, setStockIncrement] = useState({})
+  const [editingProduct, setEditingProduct] = useState(null)
+  const [showImagePreview, setShowImagePreview] = useState(false)
+  const [imagePreviewUrl, setImagePreviewUrl] = useState('')
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [productToDelete, setProductToDelete] = useState(null)
 
   useEffect(()=>{ if (tab === 0) fetchProducts() }, [tab])
   useEffect(()=>{ if (tab === 1) fetchOrders() }, [tab])
@@ -37,6 +42,51 @@ export default function Admin(){
 
   const handleStockIncrement = (productId) => (e) => setStockIncrement(prev => ({ ...prev, [productId]: Number(e.target.value) || 0 }))
 
+  const optimizeImageUrl = (url) => {
+    try {
+      const urlObj = new URL(url);
+      // Handle common image CDNs and add optimization parameters
+      if (urlObj.host.includes('pexels.com')) {
+        // Pexels: Add compression and resize parameters
+        urlObj.searchParams.set('auto', 'compress');
+        urlObj.searchParams.set('cs', 'tinysrgb');
+        urlObj.searchParams.set('w', '800'); // Reasonable product image width
+        return urlObj.toString();
+      }
+      if (urlObj.host.includes('cloudinary.com')) {
+        // Cloudinary: Add optimization parameters
+        return url.replace('/upload/', '/upload/w_800,q_auto,f_auto/');
+      }
+      if (urlObj.host.includes('imgix.net')) {
+        // ImgIX: Add optimization parameters
+        urlObj.searchParams.set('auto', 'compress');
+        urlObj.searchParams.set('w', '800');
+        return urlObj.toString();
+      }
+      // For other URLs, return as is
+      return url;
+    } catch (e) {
+      console.warn('Invalid URL:', url);
+      return url;
+    }
+  }
+
+  const validateAndPreviewImage = async (url) => {
+    if (!url) return false;
+    try {
+      const response = await fetch(url);
+      const contentType = response.headers.get('content-type');
+      if (!contentType.startsWith('image/')) {
+        setMessage({ type: 'error', text: 'URL does not point to a valid image' });
+        return false;
+      }
+      return true;
+    } catch (err) {
+      setMessage({ type: 'error', text: 'Could not validate image URL' });
+      return false;
+    }
+  }
+
   const submitProduct = async () => {
     try {
       if (!product.product_name || !product.price || !product.stock_quantity) {
@@ -44,20 +94,41 @@ export default function Admin(){
         setTimeout(()=>setMessage(null), 4000)
         return
       }
-      const payload = { ...product, price: Number(product.price), stock_quantity: Number(product.stock_quantity) }
-      console.log('Submitting product:', payload)
-      const res = await api.post('/products', payload)
-      console.log('Product added response:', res.data)
-      setMessage({ type: 'success', text: 'Product added successfully' })
-      setProduct({ product_name: '', price: '', sport_type: '', brand: '', image_url: '', description: '', stock_quantity: '' })
-      fetchProducts()
+
+      // Validate and optimize image URL if provided
+      let optimizedImageUrl = product.image_url;
+      if (product.image_url) {
+        const isValid = await validateAndPreviewImage(product.image_url);
+        if (!isValid) return;
+        optimizedImageUrl = optimizeImageUrl(product.image_url);
+      }
+
+      const payload = { 
+        ...product, 
+        price: Number(product.price), 
+        stock_quantity: Number(product.stock_quantity),
+        image_url: optimizedImageUrl
+      }
+
+      if (editingProduct) {
+        // Update existing product
+        await api.put(`/products/${editingProduct.product_id}`, payload);
+        setMessage({ type: 'success', text: 'Product updated successfully' });
+      } else {
+        // Add new product
+        const res = await api.post('/products', payload);
+        setMessage({ type: 'success', text: 'Product added successfully' });
+      }
+
+      setProduct({ product_name: '', price: '', sport_type: '', brand: '', image_url: '', description: '', stock_quantity: '' });
+      setEditingProduct(null);
+      fetchProducts();
     } catch (err) {
-      console.error('Error adding product:', err)
-      console.error('Error response:', err.response?.data)
-      const errorMsg = err.response?.data?.error || err.response?.data?.message || err.message || 'Unknown error'
-      setMessage({ type: 'error', text: 'Failed to add product: ' + errorMsg })
+      console.error('Error:', err);
+      const errorMsg = err.response?.data?.error || err.response?.data?.message || err.message || 'Unknown error';
+      setMessage({ type: 'error', text: `Failed to ${editingProduct ? 'update' : 'add'} product: ${errorMsg}` });
     }
-    setTimeout(()=>setMessage(null), 5000)
+    setTimeout(()=>setMessage(null), 5000);
   }
 
   const increaseStock = async (productId) => {
@@ -180,22 +251,119 @@ export default function Admin(){
             </Box>
 
             {isAddingNew ? (
-              // Add New Product Form
+              // Add/Edit Product Form
               <Grid container spacing={2}>
                 <Grid item xs={12} md={6}>
-                  <TextField fullWidth label="Product Name *" value={product.product_name} onChange={handleProductChange('product_name')} sx={{ mb: 2 }} required />
-                  <TextField fullWidth label="Price *" type="number" value={product.price} onChange={handleProductChange('price')} sx={{ mb: 2 }} required />
-                  <TextField fullWidth label="Stock Quantity *" type="number" value={product.stock_quantity} onChange={handleProductChange('stock_quantity')} sx={{ mb: 2 }} required />
-                  <TextField fullWidth label="Sport Type" value={product.sport_type} onChange={handleProductChange('sport_type')} sx={{ mb: 2 }} placeholder="e.g., Football, Basketball" />
-                  <TextField fullWidth label="Brand" value={product.brand} onChange={handleProductChange('brand')} sx={{ mb: 2 }} />
-                  <TextField fullWidth label="Image URL" value={product.image_url} onChange={handleProductChange('image_url')} sx={{ mb: 2 }} />
+                  <TextField 
+                    fullWidth 
+                    label="Product Name *" 
+                    value={product.product_name} 
+                    onChange={handleProductChange('product_name')} 
+                    sx={{ mb: 2 }} 
+                    required 
+                  />
+                  <TextField 
+                    fullWidth 
+                    label="Price *" 
+                    type="number" 
+                    value={product.price} 
+                    onChange={handleProductChange('price')} 
+                    sx={{ mb: 2 }} 
+                    required 
+                  />
+                  <TextField 
+                    fullWidth 
+                    label="Stock Quantity *" 
+                    type="number" 
+                    value={product.stock_quantity} 
+                    onChange={handleProductChange('stock_quantity')} 
+                    sx={{ mb: 2 }} 
+                    required 
+                  />
+                  <TextField 
+                    fullWidth 
+                    label="Sport Type" 
+                    value={product.sport_type} 
+                    onChange={handleProductChange('sport_type')} 
+                    sx={{ mb: 2 }} 
+                    placeholder="e.g., Football, Basketball" 
+                  />
+                  <TextField 
+                    fullWidth 
+                    label="Brand" 
+                    value={product.brand} 
+                    onChange={handleProductChange('brand')} 
+                    sx={{ mb: 2 }} 
+                  />
+                  <Box sx={{ mb: 2 }}>
+                    <TextField 
+                      fullWidth 
+                      label="Image URL" 
+                      value={product.image_url} 
+                      onChange={(e) => {
+                        handleProductChange('image_url')(e);
+                        if (e.target.value) {
+                          validateAndPreviewImage(e.target.value).then(isValid => {
+                            if (isValid) {
+                              setImagePreviewUrl(optimizeImageUrl(e.target.value));
+                              setShowImagePreview(true);
+                            }
+                          });
+                        } else {
+                          setShowImagePreview(false);
+                        }
+                      }}
+                    />
+                    {showImagePreview && imagePreviewUrl && (
+                      <Box sx={{ mt: 1, position: 'relative' }}>
+                        <img 
+                          src={imagePreviewUrl} 
+                          alt="Preview" 
+                          style={{ 
+                            maxWidth: '100%', 
+                            height: 'auto', 
+                            maxHeight: '200px',
+                            objectFit: 'contain',
+                            borderRadius: '4px'
+                          }} 
+                        />
+                      </Box>
+                    )}
+                  </Box>
                 </Grid>
                 <Grid item xs={12} md={6}>
-                  <TextField fullWidth label="Description" value={product.description} onChange={handleProductChange('description')} sx={{ mb: 2 }} multiline rows={8} />
+                  <TextField 
+                    fullWidth 
+                    label="Description" 
+                    value={product.description} 
+                    onChange={handleProductChange('description')} 
+                    sx={{ mb: 2 }} 
+                    multiline 
+                    rows={8} 
+                  />
                   <Box sx={{ display: 'flex', gap: 1 }}>
-                    <Button variant="contained" onClick={submitProduct}>Add Product</Button>
+                    <Button 
+                      variant="contained" 
+                      onClick={submitProduct}
+                    >
+                      {editingProduct ? 'Update Product' : 'Add Product'}
+                    </Button>
+                    {editingProduct && (
+                      <Button 
+                        variant="outlined" 
+                        onClick={() => {
+                          setEditingProduct(null);
+                          setProduct({ product_name: '', price: '', sport_type: '', brand: '', image_url: '', description: '', stock_quantity: '' });
+                          setShowImagePreview(false);
+                        }}
+                      >
+                        Cancel Edit
+                      </Button>
+                    )}
                   </Box>
-                  <Typography variant="caption" color="text.secondary" sx={{ mt: 2 }}>Fields marked with * are required</Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
+                    Fields marked with * are required
+                  </Typography>
                 </Grid>
               </Grid>
             ) : (
@@ -237,7 +405,7 @@ export default function Admin(){
                                 onChange={handleStockIncrement(prod.product_id)}
                               />
                             </TableCell>
-                            <TableCell align="center">
+                            <TableCell align="center" sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
                               <Button
                                 size="small"
                                 variant="contained"
@@ -247,6 +415,33 @@ export default function Admin(){
                               >
                                 Add
                               </Button>
+                              <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                <IconButton
+                                  size="small"
+                                  color="primary"
+                                  onClick={() => {
+                                    setProduct(prod);
+                                    setEditingProduct(prod);
+                                    setIsAddingNew(true);
+                                    if (prod.image_url) {
+                                      setImagePreviewUrl(prod.image_url);
+                                      setShowImagePreview(true);
+                                    }
+                                  }}
+                                >
+                                  <Edit />
+                                </IconButton>
+                                <IconButton
+                                  size="small"
+                                  color="error"
+                                  onClick={() => {
+                                    setProductToDelete(prod);
+                                    setDeleteDialogOpen(true);
+                                  }}
+                                >
+                                  <Delete />
+                                </IconButton>
+                              </Box>
                             </TableCell>
                           </TableRow>
                         ))
@@ -429,6 +624,59 @@ export default function Admin(){
           </>
         )}
       </Paper>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog 
+        open={deleteDialogOpen} 
+        onClose={() => setDeleteDialogOpen(false)}
+        PaperProps={{
+          sx: {
+            width: '100%',
+            maxWidth: 400
+          }
+        }}
+      >
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Warning color="warning" />
+          Confirm Delete
+        </DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to delete "{productToDelete?.product_name}"?
+            This action cannot be undone.
+          </Typography>
+          {productToDelete?.stock_quantity > 0 && (
+            <Alert severity="warning" sx={{ mt: 2 }}>
+              Warning: This product has {productToDelete.stock_quantity} items in stock
+            </Alert>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+          <Button 
+            variant="contained" 
+            color="error"
+            onClick={async () => {
+              try {
+                await api.delete(`/products/${productToDelete.product_id}`);
+                setMessage({ type: 'success', text: 'Product deleted successfully' });
+                fetchProducts();
+                setDeleteDialogOpen(false);
+                setProductToDelete(null);
+              } catch (err) {
+                console.error('Error deleting product:', err);
+                setMessage({ 
+                  type: 'error', 
+                  text: 'Failed to delete product: ' + (err.response?.data?.error || err.message)
+                });
+              }
+              setTimeout(() => setMessage(null), 5000);
+            }}
+          >
+            Delete Product
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   )
 }
