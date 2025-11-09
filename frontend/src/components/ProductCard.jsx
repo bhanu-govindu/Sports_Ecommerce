@@ -20,7 +20,7 @@ import { isLiked, toggleWishlist } from '../wishlist'
 import { formatINR } from '../currency'
 import { getProductImage } from '../assets/images'
 
-const ProductCard = ({ product }) => {
+const ProductCard = ({ product, isAdmin }) => {
   const navigate = useNavigate();
   const theme = useTheme();
   const [isHovered, setIsHovered] = useState(false);
@@ -105,45 +105,47 @@ const ProductCard = ({ product }) => {
               borderRadius: '8px 8px 0 0',
             }}
           />
-          <Box
-            sx={{
-              position: 'absolute',
-              top: 8,
-              right: 8,
-              display: 'flex',
-              gap: 1,
-            }}
-          >
-            <motion.div whileHover={{ scale: 1.2 }} whileTap={{ scale: 0.9 }}>
-              <IconButton
-                size="small"
-                sx={{ 
-                  backgroundColor: 'white',
-                  '&:hover': { backgroundColor: 'white' }
-                }}
-                onClick={(e) => { e.stopPropagation?.(); toggleWishlist(product.product_id); setIsFavorite(v=>!v) }}
-              >
-                <Favorite 
+          {!isAdmin && (
+            <Box
+              sx={{
+                position: 'absolute',
+                top: 8,
+                right: 8,
+                display: 'flex',
+                gap: 1,
+              }}
+            >
+              <motion.div whileHover={{ scale: 1.2 }} whileTap={{ scale: 0.9 }}>
+                <IconButton
+                  size="small"
                   sx={{ 
-                    color: isFavorite ? '#e91e63' : '#757575',
-                    transition: 'color 0.3s ease'
-                  }} 
-                />
-              </IconButton>
-            </motion.div>
-            <motion.div whileHover={{ scale: 1.2 }} whileTap={{ scale: 0.9 }}>
-              <IconButton
-                size="small"
-                sx={{ 
-                  backgroundColor: 'white',
-                  '&:hover': { backgroundColor: 'white' }
-                }}
-                onClick={(e) => e.stopPropagation?.()}
-              >
-                <Share sx={{ color: '#757575' }} />
-              </IconButton>
-            </motion.div>
-          </Box>
+                    backgroundColor: 'white',
+                    '&:hover': { backgroundColor: 'white' }
+                  }}
+                  onClick={(e) => { e.stopPropagation?.(); toggleWishlist(product.product_id); setIsFavorite(v=>!v) }}
+                >
+                  <Favorite 
+                    sx={{ 
+                      color: isFavorite ? '#e91e63' : '#757575',
+                      transition: 'color 0.3s ease'
+                    }} 
+                  />
+                </IconButton>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.2 }} whileTap={{ scale: 0.9 }}>
+                <IconButton
+                  size="small"
+                  sx={{ 
+                    backgroundColor: 'white',
+                    '&:hover': { backgroundColor: 'white' }
+                  }}
+                  onClick={(e) => e.stopPropagation?.()}
+                >
+                  <Share sx={{ color: '#757575' }} />
+                </IconButton>
+              </motion.div>
+            </Box>
+          )}
         </motion.div>
 
         <CardContent sx={{ flexGrow: 1, pt: 2 }}>
@@ -222,14 +224,14 @@ const ProductCard = ({ product }) => {
 
           <Box sx={{ 
             display: 'flex', 
-            justifyContent: 'space-between',
+            justifyContent: isAdmin ? 'center' : 'space-between',
             gap: 1
           }}>
             <motion.div
               variants={buttonVariants}
               whileHover="hover"
               whileTap="tap"
-              style={{ flex: 1 }}
+              style={{ flex: isAdmin ? 0 : 1 }}
             >
               <Button 
                 fullWidth
@@ -246,45 +248,47 @@ const ProductCard = ({ product }) => {
                 View Details
               </Button>
             </motion.div>
-            <motion.div
-              variants={buttonVariants}
-              whileHover="hover"
-              whileTap="tap"
-              style={{ flex: 1 }}
-            >
-              <Button
-                fullWidth
-                variant="outlined"
-                size="small"
-                startIcon={<AddShoppingCart />}
-                onClick={async (e) => {
-                  e.stopPropagation?.();
-                  try {
-                    const customer = getCustomer()
-                    if (!customer) {
-                      // redirect to auth page and request add-to-cart after login
-                      return navigate(`/auth?action=add&product_id=${product.product_id}&quantity=1`)
-                    }
-                    await api.post(`/carts/${customer.customer_id}/add`, { product_id: product.product_id, quantity: 1 })
-                    alert('Added to cart')
-                  } catch (err) {
-                    console.error(err)
-                    alert('Could not add to cart')
-                  }
-                }}
-                sx={{ 
-                  color: '#1a237e', 
-                  borderColor: '#1a237e',
-                  '&:hover': {
-                    borderColor: '#283593',
-                    color: '#283593',
-                    backgroundColor: 'rgba(26, 35, 126, 0.04)'
-                  }
-                }}
+            {!isAdmin && (
+              <motion.div
+                variants={buttonVariants}
+                whileHover="hover"
+                whileTap="tap"
+                style={{ flex: 1 }}
               >
-                Add to Cart
-              </Button>
-            </motion.div>
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  size="small"
+                  startIcon={<AddShoppingCart />}
+                  onClick={async (e) => {
+                    e.stopPropagation?.();
+                    try {
+                      const customer = getCustomer()
+                      if (!customer) {
+                        // redirect to auth page and request add-to-cart after login
+                        return navigate(`/auth?action=add&product_id=${product.product_id}&quantity=1`)
+                      }
+                      await api.post(`/carts/${customer.customer_id}/add`, { product_id: product.product_id, quantity: 1 })
+                      alert('Added to cart')
+                    } catch (err) {
+                      console.error(err)
+                      alert('Could not add to cart')
+                    }
+                  }}
+                  sx={{ 
+                    color: '#1a237e', 
+                    borderColor: '#1a237e',
+                    '&:hover': {
+                      borderColor: '#283593',
+                      color: '#283593',
+                      backgroundColor: 'rgba(26, 35, 126, 0.04)'
+                    }
+                  }}
+                >
+                  Add to Cart
+                </Button>
+              </motion.div>
+            )}
           </Box>
         </CardContent>
 

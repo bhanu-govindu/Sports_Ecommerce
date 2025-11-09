@@ -17,7 +17,7 @@ import {
 } from '@mui/material';
 import { ShoppingCart, SportsBasketball, Menu as MenuIcon, Favorite } from '@mui/icons-material';
 import AccountCircle from '@mui/icons-material/AccountCircle'
-import { getCustomer, clearCustomer } from '../auth'
+import { getCustomer, clearCustomer, getAdmin, clearAdmin } from '../auth'
 
 function HideOnScroll({ children }) {
   const trigger = useScrollTrigger();
@@ -35,6 +35,7 @@ const Navbar = () => {
   const [profileAnchorEl, setProfileAnchorEl] = useState(null);
   const [isHovered, setIsHovered] = useState(false);
   const [customer, setCustomer] = useState(null)
+  const [admin, setAdminState] = useState(null)
   const [cartCount, setCartCount] = useState(0)
 
   const handleMenuClick = (event) => {
@@ -54,24 +55,40 @@ const Navbar = () => {
   };
 
   React.useEffect(()=>{
-    try { const c = getCustomer(); setCustomer(c || null) } catch { setCustomer(null) }
+    try { 
+      const c = getCustomer(); 
+      const a = getAdmin();
+      setCustomer(c || null);
+      setAdminState(a || null);
+    } catch { 
+      setCustomer(null);
+      setAdminState(null);
+    }
   }, [])
 
   // update navbar when auth changes elsewhere in the app
   React.useEffect(() => {
     const handler = (e) => {
-      try { const c = getCustomer(); setCustomer(c || null) } catch { setCustomer(null) }
+      try { 
+        const c = getCustomer(); 
+        const a = getAdmin();
+        setCustomer(c || null);
+        setAdminState(a || null);
+      } catch { 
+        setCustomer(null);
+        setAdminState(null);
+      }
     }
     window.addEventListener('authChange', handler)
     return () => window.removeEventListener('authChange', handler)
   }, [])
 
   React.useEffect(()=>{
-    if (!customer) { setCartCount(0); return }
+    if (!customer || admin) { setCartCount(0); return }
     // fetch cart to get count
     fetch(`${import.meta.env.VITE_API_BASE || 'http://localhost:4000/api'}/carts/${customer.customer_id}`)
       .then(r=>r.json()).then(data=> setCartCount((data.items||[]).length)).catch(()=>{})
-  }, [customer])
+  }, [customer, admin])
 
 
   const navButtonVariants = {
@@ -142,80 +159,137 @@ const Navbar = () => {
 
             {/* Desktop Menu */}
             <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
-              {['/', '/products'].map((path) => (
-                <motion.div
-                  key={path}
-                  variants={navButtonVariants}
-                  whileHover="hover"
-                  whileTap="tap"
-                >
-                  <Button
-                    color="inherit"
-                    component={Link}
-                    to={path}
-                    sx={{
-                      mx: 1,
-                      position: 'relative',
-                      '&::after': {
-                        content: '""',
-                        position: 'absolute',
-                        width: location.pathname === path ? '100%' : '0%',
-                        height: '2px',
-                        bottom: 0,
-                        left: 0,
-                        backgroundColor: 'white',
-                        transition: 'width 0.3s ease'
-                      },
-                      '&:hover::after': {
-                        width: '100%'
-                      }
-                    }}
+              {admin ? (
+                // Admin menu
+                <>
+                  {['/', '/products', '/admin'].map((path) => {
+                    const label = path === '/' ? 'Home' : path === '/admin' ? 'Dashboard' : 'Products';
+                    return (
+                      <motion.div
+                        key={path}
+                        variants={navButtonVariants}
+                        whileHover="hover"
+                        whileTap="tap"
+                      >
+                        <Button
+                          color="inherit"
+                          component={Link}
+                          to={path}
+                          sx={{
+                            mx: 1,
+                            position: 'relative',
+                            '&::after': {
+                              content: '""',
+                              position: 'absolute',
+                              width: location.pathname === path ? '100%' : '0%',
+                              height: '2px',
+                              bottom: 0,
+                              left: 0,
+                              backgroundColor: 'white',
+                              transition: 'width 0.3s ease'
+                            },
+                            '&:hover::after': {
+                              width: '100%'
+                            }
+                          }}
+                        >
+                          {label}
+                        </Button>
+                      </motion.div>
+                    );
+                  })}
+                  <motion.div variants={navButtonVariants} whileHover="hover" whileTap="tap">
+                    <IconButton color="inherit" onClick={handleProfileMenuClick} sx={{ ml: 1 }} aria-controls={Boolean(profileAnchorEl) ? 'profile-menu' : undefined} aria-haspopup="true" aria-expanded={Boolean(profileAnchorEl) ? 'true' : undefined}>
+                      <AccountCircle />
+                    </IconButton>
+                  </motion.div>
+                </>
+              ) : (
+                // Customer menu
+                <>
+                  {['/', '/products'].map((path) => (
+                    <motion.div
+                      key={path}
+                      variants={navButtonVariants}
+                      whileHover="hover"
+                      whileTap="tap"
+                    >
+                      <Button
+                        color="inherit"
+                        component={Link}
+                        to={path}
+                        sx={{
+                          mx: 1,
+                          position: 'relative',
+                          '&::after': {
+                            content: '""',
+                            position: 'absolute',
+                            width: location.pathname === path ? '100%' : '0%',
+                            height: '2px',
+                            bottom: 0,
+                            left: 0,
+                            backgroundColor: 'white',
+                            transition: 'width 0.3s ease'
+                          },
+                          '&:hover::after': {
+                            width: '100%'
+                          }
+                        }}
+                      >
+                        {path === '/' ? 'Home' : path.slice(1).charAt(0).toUpperCase() + path.slice(2)}
+                      </Button>
+                    </motion.div>
+                  ))}
+                  <motion.div
+                    variants={navButtonVariants}
+                    whileHover="hover"
+                    whileTap="tap"
                   >
-                    {path === '/' ? 'Home' : path.slice(1).charAt(0).toUpperCase() + path.slice(2)}
-                  </Button>
-                </motion.div>
-              ))}
-              <motion.div
-                variants={navButtonVariants}
-                whileHover="hover"
-                whileTap="tap"
-              >
-                <IconButton 
-                  color="inherit" 
-                  component={Link} 
-                  to="/wishlist"
-                  sx={{ ml: 1 }}
-                  aria-label="Wishlist"
-                >
-                  <Favorite />
-                </IconButton>
-              </motion.div>
-              <motion.div
-                variants={navButtonVariants}
-                whileHover="hover"
-                whileTap="tap"
-              >
-                <IconButton 
-                  color="inherit" 
-                  component={Link} 
-                  to="/cart"
-                  sx={{ ml: 1 }}
-                >
-                  <Badge badgeContent={cartCount} color="error">
-                    <ShoppingCart />
-                  </Badge>
-                </IconButton>
-              </motion.div>
-              <motion.div variants={navButtonVariants} whileHover="hover" whileTap="tap">
-                <IconButton color="inherit" onClick={handleProfileMenuClick} sx={{ ml: 1 }} aria-controls={Boolean(profileAnchorEl) ? 'profile-menu' : undefined} aria-haspopup="true" aria-expanded={Boolean(profileAnchorEl) ? 'true' : undefined}>
-                  <AccountCircle />
-                </IconButton>
-              </motion.div>
+                    <IconButton 
+                      color="inherit" 
+                      component={Link} 
+                      to="/wishlist"
+                      sx={{ ml: 1 }}
+                      aria-label="Wishlist"
+                    >
+                      <Favorite />
+                    </IconButton>
+                  </motion.div>
+                  <motion.div
+                    variants={navButtonVariants}
+                    whileHover="hover"
+                    whileTap="tap"
+                  >
+                    <IconButton 
+                      color="inherit" 
+                      component={Link} 
+                      to="/cart"
+                      sx={{ ml: 1 }}
+                    >
+                      <Badge badgeContent={cartCount} color="error">
+                        <ShoppingCart />
+                      </Badge>
+                    </IconButton>
+                  </motion.div>
+                  <motion.div variants={navButtonVariants} whileHover="hover" whileTap="tap">
+                    <IconButton color="inherit" onClick={handleProfileMenuClick} sx={{ ml: 1 }} aria-controls={Boolean(profileAnchorEl) ? 'profile-menu' : undefined} aria-haspopup="true" aria-expanded={Boolean(profileAnchorEl) ? 'true' : undefined}>
+                      <AccountCircle />
+                    </IconButton>
+                  </motion.div>
+                </>
+              )}
             </Box>
 
             {/* Sign in / user area */}
             <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 1, ml: 2 }}>
-              {customer ? (
+              {admin ? (
+                <>
+                  <Button color="inherit" onClick={handleProfileMenuClick} aria-controls={Boolean(profileAnchorEl) ? 'profile-menu' : undefined} aria-haspopup="true" aria-expanded={Boolean(profileAnchorEl) ? 'true' : undefined}>
+                    Hi, {admin.name}
+                  </Button>
+                  <Button color="inherit" onClick={() => { clearAdmin(); setAdminState(null); window.location.reload() }}>Sign out</Button>
+                </>
+              ) : customer ? (
                 <>
                   <Button color="inherit" onClick={handleProfileMenuClick} aria-controls={Boolean(profileAnchorEl) ? 'profile-menu' : undefined} aria-haspopup="true" aria-expanded={Boolean(profileAnchorEl) ? 'true' : undefined}>
                     Hi, {customer.name}
@@ -264,13 +338,16 @@ const Navbar = () => {
           anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
           transformOrigin={{ vertical: 'top', horizontal: 'right' }}
         >
-          {customer && customer.email === 'admin@dbms.com' && (
-            <MenuItem onClick={() => { handleProfileMenuClose(); navigate('/admin') }}>Admin Dashboard</MenuItem>
+          {admin ? (
+            <MenuItem onClick={() => { handleProfileMenuClose(); clearAdmin(); setAdminState(null); window.location.reload() }}>Sign out</MenuItem>
+          ) : (
+            <>
+              <MenuItem onClick={() => { handleProfileMenuClose(); navigate('/profile') }}>My Profile</MenuItem>
+              <MenuItem onClick={() => { handleProfileMenuClose(); navigate('/orders') }}>My Orders</MenuItem>
+              <MenuItem onClick={() => { handleProfileMenuClose(); navigate('/wishlist') }}>Wishlist</MenuItem>
+              <MenuItem onClick={() => { handleProfileMenuClose(); navigate('/cart') }}>Cart</MenuItem>
+            </>
           )}
-          <MenuItem onClick={() => { handleProfileMenuClose(); navigate('/profile') }}>My Profile</MenuItem>
-          <MenuItem onClick={() => { handleProfileMenuClose(); navigate('/orders') }}>My Orders</MenuItem>
-          <MenuItem onClick={() => { handleProfileMenuClose(); navigate('/wishlist') }}>Wishlist</MenuItem>
-          <MenuItem onClick={() => { handleProfileMenuClose(); navigate('/cart') }}>Cart</MenuItem>
         </Menu>
       </AppBar>
     </HideOnScroll>

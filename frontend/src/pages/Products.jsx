@@ -17,6 +17,7 @@ import { Search, SportsSoccer } from '@mui/icons-material';
 import ProductCard from '../components/ProductCard';
 import api from '../api';
 import { useLocation } from 'react-router-dom';
+import { getAdmin } from '../auth';
 
 const Products = () => {
   const [products, setProducts] = useState([]);
@@ -26,7 +27,13 @@ const Products = () => {
   const [categories, setCategories] = useState([])
   const [categoryId, setCategoryId] = useState('all')
   const [sortOrder, setSortOrder] = useState('default')
+  const [admin, setAdmin] = useState(null)
   const location = useLocation()
+
+  useEffect(() => {
+    const a = getAdmin()
+    setAdmin(a)
+  }, [])
 
   useEffect(() => {
     const load = async () => {
@@ -195,7 +202,7 @@ const Products = () => {
               ))
             : sortedProducts.map((product) => (
                 <Grid item xs={12} sm={6} md={4} lg={3} key={product.product_id}>
-                  <ProductCard product={product} />
+                  <ProductCard product={product} isAdmin={!!admin} />
                 </Grid>
               ))}
         </Grid>

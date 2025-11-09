@@ -19,7 +19,7 @@ import {
 } from '@mui/material'
 import { AddShoppingCart, Favorite, FavoriteBorder, Share, LocalShipping, AssignmentReturn, Security, Remove, Add } from '@mui/icons-material'
 import api from '../api'
-import { getCustomer } from '../auth'
+import { getCustomer, getAdmin } from '../auth'
 import { isLiked, toggleWishlist } from '../wishlist'
 import { formatINR } from '../currency'
 import { getProductImage } from '../assets/images'
@@ -34,6 +34,12 @@ export default function ProductDetails(){
   const [canReview, setCanReview] = useState(false)
   const [reviewRating, setReviewRating] = useState(5)
   const [reviewComment, setReviewComment] = useState('')
+  const [admin, setAdmin] = useState(null)
+
+  useEffect(() => {
+    const a = getAdmin()
+    setAdmin(a)
+  }, [])
 
   useEffect(()=>{
     let mounted = true
@@ -202,37 +208,41 @@ export default function ProductDetails(){
               {inStock ? `In stock (${product.stock_quantity} available)` : 'Out of stock'}
             </Typography>
 
-            <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
-              <Typography variant="body2" sx={{ minWidth: 72 }}>Quantity</Typography>
-              <IconButton size="small" onClick={() => changeQty(qty - 1)} disabled={qty <= 1}>
-                <Remove />
-              </IconButton>
-              <TextField
-                value={qty}
-                onChange={(e) => changeQty(e.target.value)}
-                type="number"
-                size="small"
-                inputProps={{ min: 1, style: { textAlign: 'center', width: 56 } }}
-              />
-              <IconButton size="small" onClick={() => changeQty(qty + 1)}>
-                <Add />
-              </IconButton>
-            </Stack>
+            {!admin && (
+              <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
+                <Typography variant="body2" sx={{ minWidth: 72 }}>Quantity</Typography>
+                <IconButton size="small" onClick={() => changeQty(qty - 1)} disabled={qty <= 1}>
+                  <Remove />
+                </IconButton>
+                <TextField
+                  value={qty}
+                  onChange={(e) => changeQty(e.target.value)}
+                  type="number"
+                  size="small"
+                  inputProps={{ min: 1, style: { textAlign: 'center', width: 56 } }}
+                />
+                <IconButton size="small" onClick={() => changeQty(qty + 1)}>
+                  <Add />
+                </IconButton>
+              </Stack>
+            )}
 
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mb: 2 }}>
-              <Button
-                fullWidth
-                variant="contained"
-                startIcon={<AddShoppingCart />}
-                onClick={addToCart}
-                disabled={!inStock || adding}
-              >
-                {adding ? 'Adding…' : 'Add to cart'}
-              </Button>
-              <Button fullWidth variant="outlined" color={wish ? 'secondary' : 'inherit'} onClick={() => { toggleWishlist(product.product_id); setWish(v=>!v) }}>
-                {wish ? 'Wishlisted' : 'Add to wishlist'}
-              </Button>
-            </Stack>
+            {!admin && (
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mb: 2 }}>
+                <Button
+                  fullWidth
+                  variant="contained"
+                  startIcon={<AddShoppingCart />}
+                  onClick={addToCart}
+                  disabled={!inStock || adding}
+                >
+                  {adding ? 'Adding…' : 'Add to cart'}
+                </Button>
+                <Button fullWidth variant="outlined" color={wish ? 'secondary' : 'inherit'} onClick={() => { toggleWishlist(product.product_id); setWish(v=>!v) }}>
+                  {wish ? 'Wishlisted' : 'Add to wishlist'}
+                </Button>
+              </Stack>
+            )}
 
             <Divider sx={{ my: 2 }} />
 
@@ -263,8 +273,8 @@ export default function ProductDetails(){
               </Stack>
             )}
 
-            {/* Review form - only allowed if customer has a delivered order containing this product */}
-            {getCustomer() && (
+            {/* Review form - only allowed if customer has a delivered order containing this product (not for admin) */}
+            {!admin && getCustomer() && (
               <Box sx={{ mt: 3 }}>
                 {canReview ? (
                   <Box component="form" onSubmit={async (e) => { e.preventDefault(); try {

@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import api from '../api'
 import { useNavigate } from 'react-router-dom'
-import { setCustomer } from '../auth'
+import { setCustomer, setAdmin } from '../auth'
 import { Box, Paper, Tabs, Tab, TextField, Button, Typography, Avatar, Grid, InputAdornment, IconButton } from '@mui/material'
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined'
 import { Visibility, VisibilityOff } from '@mui/icons-material'
@@ -49,16 +49,24 @@ export default function Auth(){
         alert('Password is required');
         return;
       }
-      // Special-case admin login (local admin credentials)
-      if (email === 'admin@dbms.com' && password === 'Admin@123') {
-        const customer = { customer_id: 'admin', name: 'Admin', email: 'admin@dbms.com', isAdmin: true }
-        setCustomer(customer)
+      // Try admin login first
+      try {
+        const adminRes = await api.post('/admin/login', { email, password })
+        const admin = adminRes.data
+        setAdmin(admin)
         navigate('/admin')
         return
+      } catch (adminErr) {
+        // If admin login fails, continue to customer login
+        if (adminErr.response?.status !== 404 && adminErr.response?.status !== 401) {
+          throw adminErr
+        }
       }
+      
+      // Proceed with customer login
       const res = await api.post('/customers/login', { email, password })
-  const customer = res.data
-  setCustomer(customer)
+      const customer = res.data
+      setCustomer(customer)
       await handlePostAuthAction(customer)
     } catch (err) {
       console.error(err)
