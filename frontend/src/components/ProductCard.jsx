@@ -32,6 +32,8 @@ const ProductCard = ({ product, isAdmin }) => {
 
   // Derive a consistent product image
   const imageUrl = getProductImage(product)
+  // Fallback that ignores any bad/missing external image_url
+  const fallbackImageUrl = getProductImage({ ...product, image_url: null })
 
   const cardVariants = {
     hidden: { opacity: 0, y: 20 },
@@ -100,6 +102,7 @@ const ProductCard = ({ product, isAdmin }) => {
             height="200"
             image={imageUrl}
             alt={product.product_name}
+            onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = fallbackImageUrl }}
             sx={{ 
               objectFit: 'cover',
               borderRadius: '8px 8px 0 0',

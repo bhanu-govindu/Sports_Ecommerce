@@ -6,12 +6,14 @@ import { getProductImage } from '../assets/images'
 
 export default function CartItem({ item, onRemove, onIncrease, onDecrease }) {
   const img = getProductImage(item)
+  const fallbackImg = getProductImage({ ...(item || {}), image_url: null })
   return (
     <Card elevation={2} sx={{ display: 'flex', alignItems: 'center', borderRadius: 2 }}>
       <CardMedia
         component="img"
         image={img}
         alt={item.product_name}
+        onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = fallbackImg }}
         sx={{ width: 140, height: 110, objectFit: 'cover', borderRadius: '8px 0 0 8px' }}
       />
       <CardContent sx={{ flex: 1, py: 1, '&:last-child': { pb: 1 } }}>

@@ -78,6 +78,7 @@ export default function ProductDetails(){
   const reviews = data?.reviews || []
   const inStock = (product?.stock_quantity ?? 0) > 0
   const imageUrl = useMemo(() => getProductImage(product), [product])
+  const fallbackImageUrl = useMemo(() => getProductImage({ ...(product || {}), image_url: null }), [product])
 
   const changeQty = (next) => {
     const val = Math.max(1, Number(next) || 1)
@@ -142,7 +143,7 @@ export default function ProductDetails(){
                 alignItems: 'center',
                 justifyContent: 'center'
               }}>
-                <Box component="img" src={imageUrl} alt={product.product_name} sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <Box component="img" src={imageUrl} alt={product.product_name} onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = fallbackImageUrl }} sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 <Stack direction="row" spacing={1} sx={{ position: 'absolute', top: 8, right: 8 }}>
                   <IconButton onClick={() => { toggleWishlist(product.product_id); setWish(v=>!v) }} sx={{ bgcolor: 'white' }}>
                     {wish ? <Favorite sx={{ color: '#e91e63' }} /> : <FavoriteBorder sx={{ color: '#616161' }} />}

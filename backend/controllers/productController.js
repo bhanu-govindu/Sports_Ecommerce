@@ -63,25 +63,28 @@ export const addProduct = (req, res) => {
 export const updateProduct = (req, res) => {
   const id = req.params.id;
   const { product_name, description, price, stock_quantity, sport_type, brand, category_id, supplier_id, image_url } = req.body;
-  
-  // First update the product details
-  const q = `UPDATE product SET product_name = ?, description = ?, price = ?, stock_quantity = ?, sport_type = ?, brand = ?, category_id = ?, supplier_id = ? WHERE product_id = ?`;
-  db.query(q, [product_name, description, price, stock_quantity, sport_type, brand, category_id || null, supplier_id || null, id], (err, result) => {
-    if (err) return res.status(500).json({ error: err.message });
-    if (result.affectedRows === 0) return res.status(404).json({ message: 'Product not found' });
 
-    // If an image URL was provided, update it using our stored procedure
-    if (image_url) {
-      db.query('CALL update_product_primary_image(?, ?)', [id, image_url], (err2) => {
-        if (err2) {
-          console.error('Error updating product image:', err2);
-          return res.status(500).json({ error: 'Product updated but failed to update image' });
-        }
-        res.json({ success: true });
-      });
-    } else {
-      res.json({ success: true });
+  // Attempt to update including image_url; gracefully fall back if column doesn't exist
+  const qWithImage = `UPDATE product SET product_name = ?, description = ?, price = ?, stock_quantity = ?, sport_type = ?, brand = ?, category_id = ?, supplier_id = ?, image_url = COALESCE(NULLIF(?, ''), image_url) WHERE product_id = ?`;
+  const qWithoutImage = `UPDATE product SET product_name = ?, description = ?, price = ?, stock_quantity = ?, sport_type = ?, brand = ?, category_id = ?, supplier_id = ? WHERE product_id = ?`;
+
+  const paramsWithImage = [product_name, description, price, stock_quantity, sport_type, brand, category_id || null, supplier_id || null, (image_url ?? null), id];
+  const paramsWithoutImage = [product_name, description, price, stock_quantity, sport_type, brand, category_id || null, supplier_id || null, id];
+
+  db.query(qWithImage, paramsWithImage, (err, result) => {
+    if (err) {
+      // If the image_url column is missing in older schemas, try without it
+      if (err.code === 'ER_BAD_FIELD_ERROR' || /unknown column/i.test(err.message)) {
+        return db.query(qWithoutImage, paramsWithoutImage, (err2, result2) => {
+          if (err2) return res.status(500).json({ error: err2.message });
+          if (result2.affectedRows === 0) return res.status(404).json({ message: 'Product not found' });
+          return res.json({ success: true });
+        });
+      }
+      return res.status(500).json({ error: err.message });
     }
+    if (result.affectedRows === 0) return res.status(404).json({ message: 'Product not found' });
+    return res.json({ success: true });
   });
 };
 
